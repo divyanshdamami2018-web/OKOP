@@ -32,7 +32,7 @@ export function usePeople(query: string = '') {
       if (error) {
         console.error('Error searching people:', error);
       } else {
-        setPeople((data || []).map(p => ({
+        setPeople((data || []).map((p: any) => ({
           id: p.id,
           name: p.full_name,
           username: p.username || 'student',

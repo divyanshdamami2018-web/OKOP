@@ -155,7 +155,7 @@ export function useChat(conversationId: string | null) {
         schema: 'public',
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`
-      }, (payload) => {
+      }, (payload: any) => {
         const newMessage = payload.new as any;
         setMessages((prev) => [...prev, {
           id: newMessage.id,

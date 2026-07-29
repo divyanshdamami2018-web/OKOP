@@ -19,7 +19,7 @@ export function useLeaderboard() {
       if (error) {
         console.error('Error fetching leaderboard:', error);
       } else {
-        setTopStudents((data || []).map(p => ({
+        setTopStudents((data || []).map((p: any) => ({
           id: p.id,
           name: p.full_name,
           username: p.username || 'student',
