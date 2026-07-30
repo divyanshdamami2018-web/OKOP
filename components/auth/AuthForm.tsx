@@ -57,12 +57,39 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
           return;
         }
       } else {
-        const { error: loginError } = await supabase.auth.signInWithPassword({
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (loginError) throw loginError;
-        window.location.href = '/feed';
+
+        // If a session was returned immediately, redirect.
+        if (loginData?.session) {
+          window.location.href = '/feed';
+          return;
+        }
+
+        // Otherwise, briefly poll/get session to allow cookies to sync, then redirect.
+        const waitForSession = async () => {
+          const start = Date.now();
+          while (Date.now() - start < 3000) {
+            try {
+              // ask supabase for current session
+              const { data: sessionResp } = await supabase.auth.getSession();
+              if (sessionResp?.session) {
+                window.location.href = '/feed';
+                return;
+              }
+            } catch (e) {
+              // ignore
+            }
+            await new Promise((r) => setTimeout(r, 250));
+          }
+          // fallback redirect even if session not detected (keeps previous behaviour)
+          window.location.href = '/feed';
+        };
+
+        waitForSession();
       }
     } catch (err: any) {
       console.error('Auth error:', err);
