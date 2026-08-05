@@ -18,6 +18,7 @@ import {
 import { usePlacementListings, useLostFound } from '@/hooks/useDashboardData';
 import { usePeople } from '@/hooks/usePeople';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { UserProfile } from '@/types';
 
 export const PlacementWidget = () => {
   const { listings, loading } = usePlacementListings();
