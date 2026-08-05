@@ -23,14 +23,14 @@ export const postService = {
     if (error) throw error;
 
     // Fetch user's likes for these posts
-    const postIds = (data || []).map(p => p.id);
+    const postIds = (data || []).map((p: any) => p.id);
     const { data: userLikes } = await supabase
       .from('post_likes')
       .select('post_id')
       .in('post_id', postIds)
       .eq('user_id', userId);
 
-    const likedIds = new Set((userLikes || []).map(l => l.post_id));
+    const likedIds = new Set((userLikes || []).map((l: any) => l.post_id));
 
     return (data || []).map((p: any) => ({
       id: p.id,
