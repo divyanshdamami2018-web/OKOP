@@ -93,9 +93,9 @@ export const Navbar = () => {
             <Logo size="md" />
           </Link>
 
-          {/* Desktop Links - Hidden on Mobile */}
+          {/* Desktop Links - Hidden on Mobile and Landing Page */}
           <div className="hidden md:flex items-center gap-10">
-            {navLinks.map((link) => (
+            {pathname !== '/' && navLinks.map((link) => (
               <NavItem
                 key={link.label}
                 {...link}

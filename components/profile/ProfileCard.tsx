@@ -24,11 +24,22 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '@/types';
 
+import { useFollows } from '@/hooks/useFollows';
+import { useAuth } from '@/components/auth/AuthProvider';
+
 interface ProfileCardProps {
   user: UserProfile;
+  isOwnProfile?: boolean;
 }
 
-export const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
+export const ProfileCard: React.FC<ProfileCardProps> = ({ user, isOwnProfile }) => {
+  const { followerCount, isFollowing, follow, unfollow, loading } = useFollows(user.id);
+  const { user: currentUser } = useAuth();
+
+  const handleFollowAction = async () => {
+    if (isFollowing) await unfollow();
+    else await follow();
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -76,9 +87,23 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
             <button className="flex-1 md:flex-none p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl text-slate-500 hover:text-brand-primary hover:border-brand-primary/30 transition-all border border-slate-200 dark:border-white/5 active:scale-95 shadow-sm">
               <Share2 size={20} />
             </button>
-            <button className="flex-1 md:flex-none btn-primary py-4 px-10 text-xs font-black uppercase tracking-widest">
-              Edit Profile
-            </button>
+            {isOwnProfile ? (
+              <button className="flex-1 md:flex-none btn-primary py-4 px-10 text-xs font-black uppercase tracking-widest">
+                Edit Profile
+              </button>
+            ) : (
+              <button
+                onClick={handleFollowAction}
+                disabled={loading}
+                className={`flex-1 md:flex-none py-4 px-10 text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl ${
+                  isFollowing
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  : 'bg-brand-gradient text-white shadow-brand-primary/20'
+                }`}
+              >
+                {isFollowing ? 'Following' : 'Follow'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -113,10 +138,10 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
 
         {/* Dynamic Stats Grid */}
         <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatBox label="XP Points" value={user.xp_points.toLocaleString()} color="brand-primary" />
-          <StatBox label="Friends" value="1.2k" color="brand-secondary" />
-          <StatBox label="Activities" value="48" color="brand-accent" />
-          <StatBox label="Communities" value="12" color="brand-info" />
+          <StatBox label="Followers" value={followerCount.toString()} color="brand-primary" />
+          <StatBox label="Following" value="0" color="brand-secondary" />
+          <StatBox label="XP Points" value={user.xp_points.toLocaleString()} color="brand-accent" />
+          <StatBox label="Daily Streak" value={user.daily_streak.toString()} color="brand-info" />
         </div>
 
         {/* Skills & Interests Tags */}

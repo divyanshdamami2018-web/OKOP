@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         college: data.college,
         interests: data.interests || [],
         skills: data.skills || [],
+        role: data.role || 'student',
         xp_points: data.xp_points || 0,
         daily_streak: data.daily_streak || 0,
         is_ghost_mode: data.is_ghost_mode || false,
@@ -65,24 +66,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initAuth = async () => {
       try {
-        // Fast timeout for session fetch
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000));
-        const sessionPromise = supabase.auth.getSession();
-
-        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
 
-        if (result && 'data' in result) {
-          const session = result.data.session;
-          setUser(session?.user ?? null);
-          setLoading(false); // Unblock AuthGuard INSTANTLY!
-          
-          if (session?.user) {
-            loadProfile(session.user.id); // Fetch in background
-          }
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await loadProfile(session.user.id);
         }
       } catch (e) {
-        // Ignore errors
+        console.error('Auth initialization error:', e);
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -81,108 +81,14 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-6 space-y-10 pb-20">
-      {/* Profile Header */}
-      <div className="relative h-64 md:h-80 rounded-[3rem] overflow-hidden shadow-2xl">
-        <img
-          src={user.cover_url || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1200&h=400&auto=format&fit=crop"}
-          className="w-full h-full object-cover"
-          alt="Cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-
-        <div className="absolute bottom-8 left-8 right-8 flex flex-col md:flex-row items-end justify-between gap-6">
-          <div className="flex items-end gap-6">
-            <div className="relative group">
-              <img
-                src={user.avatar}
-                className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] border-8 border-slate-50 dark:border-slate-950 object-cover shadow-2xl"
-                alt="Avatar"
-              />
-              <button className="absolute bottom-2 right-2 p-2 bg-brand-primary text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all">
-                <Plus size={16} />
-              </button>
-            </div>
-            <div className="pb-2 space-y-1">
-              <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">{user.name}</h1>
-              <p className="text-white/70 font-bold uppercase tracking-widest text-xs">@{user.username}</p>
-            </div>
-          </div>
-
-          <div className="flex gap-3 pb-2">
-            <button className="p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-white/20 transition-all active:scale-90">
-              <Share2 size={20} />
-            </button>
-            <button className="px-8 py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all">
-              Edit Profile
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Left Column: Sidebar Details */}
-        <div className="space-y-8">
-          {/* Bio Section */}
-          <div className="glass-card rounded-[2.5rem] p-8">
-            <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Bio</h3>
-            <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
-              {user.bio}
-            </p>
-
-            <div className="mt-8 flex gap-4">
-              {user.github_url && (
-                <a href={user.github_url} className="p-3 bg-slate-100 dark:bg-slate-900 rounded-xl text-slate-600 hover:text-brand-primary transition-all">
-                  <Github size={20} />
-                </a>
-              )}
-              {user.linkedin_url && (
-                <a href={user.linkedin_url} className="p-3 bg-slate-100 dark:bg-slate-900 rounded-xl text-slate-600 hover:text-brand-primary transition-all">
-                  <Linkedin size={20} />
-                </a>
-              )}
-              {user.website_url && (
-                <a href={user.website_url} className="p-3 bg-slate-100 dark:bg-slate-900 rounded-xl text-slate-600 hover:text-brand-primary transition-all">
-                  <Globe size={20} />
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* Gamification Stats */}
-          <div className="bg-brand-gradient rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-brand-primary/20">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16" />
-            <div className="relative z-10 space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Experience</p>
-                  <p className="text-3xl font-black tracking-tight">{user.xp_points} XP</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
-                  <Award size={24} />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                  <span>Level 12</span>
-                  <span>750 / 1000</span>
-                </div>
-                <div className="w-full h-2 bg-black/10 rounded-full overflow-hidden">
-                  <div className="bg-white h-full rounded-full" style={{ width: '75%' }} />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl w-fit">
-                <Flame size={16} fill="white" />
-                <span className="text-sm font-black tracking-widest">{user.daily_streak} Day Streak</span>
-              </div>
-            </div>
-          </div>
+    <div className="max-w-7xl mx-auto px-6 space-y-12 pb-20">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-12">
+           <ProfileCard user={user} isOwnProfile={true} />
         </div>
 
-        {/* Right Column: Tabbed Content */}
-        <div className="lg:col-span-2 space-y-8">
+        {/* Tabbed Content */}
+        <div className="lg:col-span-12 space-y-8">
           {/* Custom Tabs */}
           <div className="flex p-1.5 bg-slate-100 dark:bg-slate-900/50 rounded-3xl border border-slate-200 dark:border-white/5">
             {[

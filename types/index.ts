@@ -26,6 +26,7 @@ export interface UserProfile {
 
   interests: string[];
   skills: string[];
+  role: 'student' | 'moderator' | 'admin';
   status?: 'online' | 'offline' | 'away';
   xp_points: number;
   daily_streak: number;
@@ -37,6 +38,11 @@ export interface UserProfile {
   hide_email: boolean;
   hide_phone: boolean;
   hide_semester: boolean;
+
+  // Social Stats (New)
+  follower_count?: number;
+  following_count?: number;
+  post_count?: number;
 
   created_at: string;
 }
@@ -193,4 +199,37 @@ export interface Club {
   banner_url?: string;
   category: string;
   membersCount: number;
+}
+
+// SOCIAL SYSTEM (New)
+export interface Post {
+  id: string;
+  author_id: string;
+  content: string;
+  media_urls: string[];
+  location_name?: string;
+  is_public: boolean;
+  created_at: string;
+  author?: UserProfile;
+  likes_count?: number;
+  comments_count?: number;
+  is_liked?: boolean;
+  is_bookmarked?: boolean;
+}
+
+export interface PostComment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  parent_id?: string;
+  created_at: string;
+  author?: UserProfile;
+  replies?: PostComment[];
+}
+
+export interface Follow {
+  follower_id: string;
+  following_id: string;
+  created_at: string;
 }

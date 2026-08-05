@@ -78,6 +78,7 @@ export const SignupForm = () => {
         email: data.email,
         password: data.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
           data: {
             full_name: data.fullName,
             student_id: data.studentId,

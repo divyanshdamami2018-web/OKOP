@@ -18,6 +18,8 @@ import { motion } from 'framer-motion';
 import { useActivities } from '@/hooks/useActivities';
 import { useMeetSpots } from '@/hooks/useMeetSpots';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useFollows } from '@/hooks/useFollows';
+import { usePosts } from '@/hooks/usePosts';
 import { UserProfile } from '@/types';
 import Link from 'next/link';
 
@@ -26,6 +28,7 @@ const MomentsFeed = dynamic(() => import('@/components/feed/MomentsFeed').then(m
   loading: () => <div className="h-44 bg-slate-100 dark:bg-slate-900 rounded-3xl animate-pulse" />,
   ssr: false
 });
+const PostCard = dynamic(() => import('@/components/feed/PostCard').then(m => ({ default: m.PostCard })), { ssr: false });
 const ActivityCard = dynamic(() => import('@/components/ActivityCard').then(m => ({ default: m.ActivityCard })), { ssr: false });
 const ScheduleStrip = dynamic(() => import('@/components/feed/ScheduleStrip').then(m => ({ default: m.ScheduleStrip })), { ssr: false });
 const PlacementWidget = dynamic(() => import('@/components/feed/DashboardWidgets').then(m => ({ default: m.PlacementWidget })), { ssr: false });
@@ -39,6 +42,8 @@ export default function HomeDashboard() {
   const { user, profile, loading: authLoading } = useAuth();
   const { activities, loading: activitiesLoading } = useActivities();
   const { spots } = useMeetSpots();
+  const { posts, loading: postsLoading, toggleLike } = usePosts();
+  const { followerCount } = useFollows(user?.id || '');
 
   const stats = useMemo(() => {
     const spotsTotal = spots.reduce((acc, spot) => acc + spot.liveCount, 0);
@@ -59,9 +64,11 @@ export default function HomeDashboard() {
       totalActive: spotsTotal + activitiesTotal,
       attendance: 92, // Default static for now until schema updated
       xp: profile?.xp_points || 0,
-      completion
+      completion,
+      followers: followerCount || 0,
+      postsCount: posts.filter(p => p.author_id === user?.id).length
     };
-  }, [spots, activities, profile]);
+  }, [spots, activities, profile, followerCount, posts, user]);
 
   const firstName = profile?.name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Student';
 
@@ -115,13 +122,13 @@ export default function HomeDashboard() {
           {/* Quick Stats Pill */}
           <div className="flex items-center gap-6 bg-white dark:bg-slate-900/50 backdrop-blur-xl p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-premium">
             <div className="text-center space-y-1">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Attendance</p>
-              <p className="text-2xl font-black text-brand-primary">{stats.attendance}%</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Followers</p>
+              <p className="text-2xl font-black text-brand-primary">{stats.followers}</p>
             </div>
             <div className="w-px h-10 bg-slate-100 dark:bg-white/5" />
             <div className="text-center space-y-1">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global XP</p>
-              <p className="text-2xl font-black text-brand-secondary">{stats.xp.toLocaleString()}</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Posts</p>
+              <p className="text-2xl font-black text-brand-secondary">{stats.postsCount}</p>
             </div>
           </div>
 
@@ -157,17 +164,42 @@ export default function HomeDashboard() {
           {/* Quick Hub Navigation */}
           <QuickActions />
 
-          {/* Social Moments Feed */}
-          <section className="space-y-6">
-            <div className="flex items-center justify-between px-4">
-              <h2 className="text-2xl font-black tracking-tight flex items-center gap-3 text-slate-900 dark:text-white">
-                Live Pulse <Flame size={22} className="text-brand-accent animate-bounce-subtle" fill="currentColor" />
-              </h2>
-              <button className="btn-secondary py-2.5 px-6 rounded-2xl text-[10px]">
-                Post a Moment
-              </button>
+          {/* Social Feed Section */}
+          <section className="space-y-10">
+            {/* Moments (Stories) */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-4">
+                <h2 className="text-2xl font-black tracking-tight flex items-center gap-3 text-slate-900 dark:text-white">
+                  Live Pulse <Flame size={22} className="text-brand-accent animate-bounce-subtle" fill="currentColor" />
+                </h2>
+                <button className="btn-secondary py-2.5 px-6 rounded-2xl text-[10px]">
+                  Post a Moment
+                </button>
+              </div>
+              <MomentsFeed />
             </div>
-            <MomentsFeed />
+
+            {/* Posts (Feed) */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-4">
+                <h2 className="text-2xl font-black tracking-tight flex items-center gap-3 text-slate-900 dark:text-white">
+                  Global Feed <Rocket size={22} className="text-brand-primary" />
+                </h2>
+              </div>
+              <div className="space-y-8">
+                {postsLoading ? (
+                  [1, 2].map(i => <div key={i} className="h-64 bg-slate-100 dark:bg-slate-900 rounded-[3rem] animate-pulse" />)
+                ) : posts.length > 0 ? (
+                  posts.map(post => (
+                    <PostCard key={post.id} post={post} onLike={() => toggleLike(post.id, !!post.is_liked)} />
+                  ))
+                ) : (
+                  <div className="glass-card p-12 rounded-[3rem] text-center space-y-4">
+                    <p className="text-slate-500 font-medium">No posts yet. Be the first to share something!</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </section>
 
           {/* Placement & Opportunity Highlight */}

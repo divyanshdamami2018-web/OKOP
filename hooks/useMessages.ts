@@ -24,7 +24,7 @@ export function useConversations() {
             created_at,
             messages (
               id,
-              text,
+              content,
               created_at,
               sender_id
             ),
@@ -82,7 +82,7 @@ export function useConversations() {
           unreadCount: 0, // Would need a more complex query or table for this
           lastMessage: lastMsg ? {
             id: lastMsg.id,
-            text: lastMsg.text,
+            text: lastMsg.content,
             senderId: lastMsg.sender_id,
             timestamp: lastMsg.created_at,
             isRead: lastMsg.is_read || false
@@ -138,7 +138,7 @@ export function useChat(conversationId: string | null) {
 
       setMessages((data || []).map((m: any) => ({
         id: m.id,
-        text: m.text,
+        text: m.content,
         senderId: m.sender_id,
         timestamp: m.created_at,
         isRead: m.is_read || false
@@ -159,7 +159,7 @@ export function useChat(conversationId: string | null) {
         const newMessage = payload.new as any;
         setMessages((prev) => [...prev, {
           id: newMessage.id,
-          text: newMessage.text,
+          text: newMessage.content,
           senderId: newMessage.sender_id,
           timestamp: newMessage.created_at,
           isRead: newMessage.is_read || false
@@ -180,7 +180,7 @@ export function useChat(conversationId: string | null) {
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        text
+        content: text
       });
 
     if (error) throw error;

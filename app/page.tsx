@@ -45,35 +45,59 @@ const StatPill = ({ label, value }: any) => (
 export default function LandingPage() {
   return (
     <div className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* Dynamic Background Mesh */}
+      {/* Dynamic Background Mesh & Floating Elements */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute top-[-10%] -left-[10%] w-[60%] h-[60%] bg-brand-primary/10 blur-[140px] rounded-full animate-pulse-gentle" />
         <div className="absolute bottom-[-10%] -right-[10%] w-[50%] h-[50%] bg-brand-secondary/10 blur-[140px] rounded-full animate-pulse-gentle animate-delay-300" />
         <div className="absolute top-[30%] left-[40%] w-[30%] h-[30%] bg-brand-success/5 blur-[120px] rounded-full animate-pulse-gentle animate-delay-500" />
+
+        {/* Floating Icons */}
+        <motion.div
+          animate={{ y: [0, -30, 0], rotate: [0, 10, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] left-[10%] text-brand-primary/20 hidden lg:block"
+        >
+          <Sparkles size={120} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, 30, 0], rotate: [0, -10, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[20%] right-[10%] text-brand-secondary/20 hidden lg:block"
+        >
+          <Zap size={100} />
+        </motion.div>
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+          transition={{ duration: 10, repeat: Infinity }}
+          className="absolute top-[60%] left-[20%] text-brand-success/20 hidden lg:block"
+        >
+          <Users size={150} />
+        </motion.div>
       </div>
 
       {/* Hero Section */}
-      <header className="pt-20 pb-32 px-6">
-        <div className="max-w-7xl mx-auto text-center space-y-12">
+      <header className="pt-32 pb-32 px-6 relative">
+        <div className="max-w-7xl mx-auto text-center space-y-16">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex justify-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex justify-center relative"
           >
+            <div className="absolute inset-0 bg-brand-primary/20 blur-3xl rounded-full scale-150 animate-pulse-gentle -z-10" />
             <Logo size="xl" />
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-6"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="space-y-8 relative z-10"
           >
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.85]">
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter text-slate-900 dark:text-white leading-[0.8]">
               Your Campus, <br/>
-              <span className="text-gradient">Amplified.</span>
+              <span className="text-gradient drop-shadow-sm">Amplified.</span>
             </h1>
-            <p className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 font-medium max-w-2xl mx-auto">
+            <p className="text-xl md:text-3xl text-slate-500 dark:text-slate-400 font-medium max-w-3xl mx-auto leading-relaxed">
               The ultimate social pulse for modern students. Coordinate squads, share knowledge, and discover the heartbeat of your university.
             </p>
           </motion.div>
@@ -82,12 +106,12 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-6"
+            className="flex flex-col sm:flex-row items-center justify-center gap-8 pt-4"
           >
-            <Link href="/signup" className="btn-primary py-6 px-12 rounded-[2.5rem] text-lg shadow-[0_20px_50px_rgba(79,70,229,0.3)] group">
-              Join the Pulse <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
+            <Link href="/signup" className="btn-primary py-7 px-16 rounded-[2.5rem] text-xl shadow-[0_20px_50px_rgba(79,70,229,0.4)] group hover:scale-105 active:scale-95 transition-all">
+              Join the Pulse <ArrowRight size={26} className="group-hover:translate-x-2 transition-transform" />
             </Link>
-            <Link href="/login" className="btn-secondary py-6 px-12 rounded-[2.5rem] text-lg bg-white dark:bg-slate-900 shadow-xl">
+            <Link href="/login" className="px-16 py-7 rounded-[2.5rem] text-xl font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/40 dark:border-white/5 shadow-2xl hover:bg-white dark:hover:bg-slate-900 transition-all active:scale-95">
               Sign In
             </Link>
           </motion.div>

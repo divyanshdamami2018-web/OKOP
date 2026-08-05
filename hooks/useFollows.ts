@@ -55,10 +55,10 @@ export function useFollows(targetUserId: string) {
 
       // Notify the user they have a new follower
       await supabase.from('notifications').insert({
-        user_id: targetUserId,
+        receiver_id: targetUserId,
         type: 'follow',
         title: 'New Follower!',
-        content: `${user.user_metadata.full_name || 'Someone'} started following you`,
+        body: `${user.user_metadata.full_name || 'Someone'} started following you`,
         link: `/profile/${user.id}`
       });
     }

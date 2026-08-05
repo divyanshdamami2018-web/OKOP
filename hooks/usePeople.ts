@@ -19,7 +19,7 @@ export function usePeople(query: string = '') {
         .limit(20);
 
       if (query) {
-        request = request.ilike('full_name', `%${query}%`);
+        request = request.or(`full_name.ilike.%${query}%,username.ilike.%${query}%,bio.ilike.%${query}%`);
       }
 
       // Filter out self

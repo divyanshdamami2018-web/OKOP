@@ -6,10 +6,10 @@ import { useAuth } from '@/components/auth/AuthProvider';
 
 export interface Notification {
   id: string;
-  user_id: string;
-  type: 'activity_join' | 'message' | 'spot_alert' | 'system';
+  receiver_id: string;
+  type: 'activity_join' | 'message' | 'spot_alert' | 'system' | 'follow' | 'like' | 'comment';
   title: string;
-  content: string;
+  body: string;
   link?: string;
   is_read: boolean;
   created_at: string;
@@ -26,7 +26,7 @@ export function useNotifications() {
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('receiver_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -49,7 +49,7 @@ export function useNotifications() {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`
+          filter: `receiver_id=eq.${user.id}`
         }, () => {
           fetchNotifications();
         })

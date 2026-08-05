@@ -27,25 +27,27 @@ export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children })
   useEffect(() => {
     if (!loading || timedOut) {
       if (!user && !isPublicRoute) {
+        // Only redirect if not already on login/signup/public
         router.push('/login');
       } else if (user && isAuthRoute) {
+        // If user is logged in but on login/signup, go to feed
         router.push('/feed');
       }
     }
-  }, [user, loading, timedOut, pathname, router]);
+  }, [user, loading, timedOut, isPublicRoute, isAuthRoute, router]);
 
-  // Public routes render immediately — no need to wait for auth
+  // Public routes render immediately
   if (isPublicRoute) {
     return <>{children}</>;
   }
 
-  // For protected routes, show loader only briefly
+  // If auth is still resolving, show loader
   if (loading && !timedOut) {
     return <LoadingLogo />;
   }
 
-  // If not logged in on a protected route, show loader while redirect happens
-  if (!user) {
+  // Final check: if we're not loading and have no user on a protected route
+  if (!user && !isPublicRoute) {
     return <LoadingLogo />;
   }
 

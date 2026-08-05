@@ -175,6 +175,49 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- SOCIAL (New)
+CREATE TABLE IF NOT EXISTS follows (
+    follower_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    following_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (follower_id, following_id)
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    author_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    content TEXT,
+    media_urls TEXT[] DEFAULT '{}',
+    location_name TEXT,
+    is_public BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TRIGGER update_posts_updated_at BEFORE UPDATE ON posts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TABLE IF NOT EXISTS post_likes (
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (post_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS post_comments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    author_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    parent_id UUID REFERENCES post_comments(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS post_bookmarks (
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (post_id, user_id)
+);
+
 -- NOTIFICATIONS & TOKENS
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -254,6 +297,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Chat Helpers
+CREATE OR REPLACE FUNCTION get_conversation_between_users(user1 UUID, user2 UUID)
+RETURNS TABLE (id UUID) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT cp1.conversation_id
+  FROM conversation_participants cp1
+  JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
+  WHERE cp1.user_id = user1 AND cp2.user_id = user2
+  AND EXISTS (
+    SELECT 1 FROM conversations c
+    WHERE c.id = cp1.conversation_id AND c.is_group = FALSE
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- XP Rewards (Atomic)
 CREATE OR REPLACE FUNCTION award_xp(target_user_id UUID, amount INTEGER)
 RETURNS void AS $$
@@ -290,6 +349,12 @@ JOIN profiles p ON e.creator_id = p.id;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admins can update any profile" ON profiles FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Admins can delete any profile" ON profiles FOR DELETE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- FRIENDS
 ALTER TABLE friend_requests ENABLE ROW LEVEL SECURITY;
@@ -334,6 +399,39 @@ ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Notes viewable by everyone" ON notes FOR SELECT USING (true);
 CREATE POLICY "Users can upload notes" ON notes FOR INSERT WITH CHECK (auth.uid() = uploader_id);
 
+-- PLACEMENT
+CREATE TABLE IF NOT EXISTS placement_listings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    description TEXT,
+    location TEXT,
+    package_info TEXT,
+    deadline TIMESTAMPTZ,
+    apply_url TEXT,
+    category TEXT CHECK (category IN ('internship', 'full-time')),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE placement_listings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Placement viewable by everyone" ON placement_listings FOR SELECT USING (true);
+
+-- LOST & FOUND
+CREATE TABLE IF NOT EXISTS lost_found (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    description TEXT,
+    type TEXT CHECK (type IN ('lost', 'found')),
+    location TEXT,
+    image_url TEXT,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    is_resolved BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE lost_found ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Lost & Found viewable by everyone" ON lost_found FOR SELECT USING (true);
+CREATE POLICY "Users can report items" ON lost_found FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Owners can resolve" ON lost_found FOR UPDATE USING (auth.uid() = user_id);
+
 -- MEET SPOTS
 ALTER TABLE meet_spots ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Meet spots viewable by everyone" ON meet_spots FOR SELECT USING (true);
@@ -363,6 +461,33 @@ CREATE POLICY "Users see messages in their convos" ON messages FOR SELECT USING 
 CREATE POLICY "Users can send messages to their convos" ON messages FOR INSERT WITH CHECK (
   auth.uid() = sender_id AND EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = auth.uid())
 );
+
+-- SOCIAL (New)
+ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Follows viewable by everyone" ON follows FOR SELECT USING (true);
+CREATE POLICY "Users can follow others" ON follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
+CREATE POLICY "Users can unfollow" ON follows FOR DELETE USING (auth.uid() = follower_id);
+
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Posts viewable by everyone" ON posts FOR SELECT USING (true);
+CREATE POLICY "Users can create posts" ON posts FOR INSERT WITH CHECK (auth.uid() = author_id);
+CREATE POLICY "Authors can update own posts" ON posts FOR UPDATE USING (auth.uid() = author_id);
+CREATE POLICY "Authors can delete own posts" ON posts FOR DELETE USING (auth.uid() = author_id);
+
+ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Likes viewable by everyone" ON post_likes FOR SELECT USING (true);
+CREATE POLICY "Users can like posts" ON post_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can unlike posts" ON post_likes FOR DELETE USING (auth.uid() = user_id);
+
+ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Comments viewable by everyone" ON post_comments FOR SELECT USING (true);
+CREATE POLICY "Users can comment" ON post_comments FOR INSERT WITH CHECK (auth.uid() = author_id);
+CREATE POLICY "Authors can delete own comments" ON post_comments FOR DELETE USING (auth.uid() = author_id);
+
+ALTER TABLE post_bookmarks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Bookmarks viewable by owner" ON post_bookmarks FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can bookmark" ON post_bookmarks FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can unbookmark" ON post_bookmarks FOR DELETE USING (auth.uid() = user_id);
 
 -- NOTIFICATIONS & TOKENS
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
@@ -398,6 +523,13 @@ CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_notifications_receiver_id ON notifications(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
 
+-- SOCIAL (New)
+CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
+CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
+CREATE INDEX IF NOT EXISTS idx_post_comments_post_id ON post_comments(post_id);
+
 -- REALTIME ENABLERS
 ALTER PUBLICATION supabase_realtime ADD TABLE events;
 ALTER PUBLICATION supabase_realtime ADD TABLE event_registrations;
@@ -405,3 +537,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE moments;
 ALTER PUBLICATION supabase_realtime ADD TABLE meet_spot_checkins;
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE follows;
+ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+ALTER PUBLICATION supabase_realtime ADD TABLE post_likes;
+ALTER PUBLICATION supabase_realtime ADD TABLE post_comments;

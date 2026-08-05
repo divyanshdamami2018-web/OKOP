@@ -14,7 +14,8 @@ import {
   Plus,
   LogOut,
   Sparkles,
-  Zap
+  Zap,
+  ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -63,7 +64,7 @@ const NavItem = ({ icon: Icon, href, label, badgeCount }: { icon: any, href: str
 };
 
 export const SidebarNav: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const { unreadCount } = useNotifications();
 
@@ -90,6 +91,9 @@ export const SidebarNav: React.FC = () => {
           <NavItem icon={MapIcon} href="/map" label="Live Map" />
           <NavItem icon={MessageCircle} href="/messages" label="Messages" />
           <NavItem icon={Bell} href="/notifications" label="Notifications" badgeCount={unreadCount} />
+          {profile?.role === 'admin' && (
+             <NavItem icon={ShieldAlert} href="/admin/dashboard" label="Admin Terminal" />
+          )}
         </nav>
 
         <div className="mt-auto space-y-6 w-full flex flex-col items-center px-3">
