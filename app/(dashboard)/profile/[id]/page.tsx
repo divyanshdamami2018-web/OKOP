@@ -58,6 +58,7 @@ export default function UserProfilePage() {
           status: profile.status || 'offline',
           xp_points: profile.xp_points || 0,
           daily_streak: profile.daily_streak || 0,
+          role: profile.role || 'student',
           is_ghost_mode: profile.is_ghost_mode || false,
           onboarding_completed: profile.onboarding_completed || false,
           is_profile_public: profile.is_profile_public ?? true,

@@ -60,6 +60,7 @@ export default function ProfilePage() {
           graduation_year: profile.graduation_year,
           interests: profile.interests || [],
           skills: profile.skills || [],
+          role: profile.role || 'student',
           xp_points: profile.xp_points || 0,
           daily_streak: profile.daily_streak || 0,
           is_ghost_mode: profile.is_ghost_mode || false,

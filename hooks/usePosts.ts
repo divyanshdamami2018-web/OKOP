@@ -20,7 +20,8 @@ export function usePosts() {
             id,
             full_name,
             avatar_url,
-            username
+            username,
+            role
           ),
           likes:post_likes(count),
           comments:post_comments(count)
@@ -51,7 +52,8 @@ export function usePosts() {
            id: p.author.id,
            name: p.author.full_name,
            avatar: p.author.avatar_url,
-           username: p.author.username
+           username: p.author.username,
+           role: p.author.role
         } as any,
         likes_count: p.likes[0]?.count || 0,
         comments_count: p.comments[0]?.count || 0,

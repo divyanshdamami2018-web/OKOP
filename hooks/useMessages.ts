@@ -34,7 +34,8 @@ export function useConversations() {
                 id,
                 full_name,
                 avatar_url,
-                status
+                status,
+                role
               )
             )
           )
@@ -61,6 +62,7 @@ export function useConversations() {
             username: p.profiles.username || 'user',
             avatar: p.profiles.avatar_url,
             status: p.profiles.status || 'offline',
+            role: p.profiles.role || 'student',
             college: p.profiles.college || 'Stanford',
             interests: p.profiles.interests || [],
             skills: p.profiles.skills || [],
