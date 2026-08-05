@@ -35,14 +35,18 @@ function MessagesContent() {
   const { profile: currentUser } = useAuthStore();
   const { conversations, loading: convsLoading } = useConversations();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [resolvedConvo, setResolvedConvo] = useState<any | null>(null);
   const { messages, loading: msgsLoading, sendMessage } = useChat(activeConversationId);
   const { typingUsers, setTyping } = useTypingIndicator(activeConversationId);
   const { isOnline } = usePresence();
+  const [resolving, setResolving] = useState(false);
 
   const [inputText, setInputText] = useState('');
 
   useEffect(() => {
     async function resolveParams() {
+      if (resolving) return;
+
       // Prioritize explicit ID
       if (conversationIdParam) {
         setActiveConversationId(conversationIdParam);
@@ -51,6 +55,7 @@ function MessagesContent() {
 
       // If we have a user ID, find or create conversation
       if (userIdParam && currentUser) {
+        setResolving(true);
         try {
           // Use atomic function to get or create DM
           const { data: convId, error: rpcErr } = await supabase
@@ -63,9 +68,14 @@ function MessagesContent() {
 
           if (convId) {
             setActiveConversationId(convId);
+            // Pre-fetch to avoid blank screen
+            const details = await chatService.getConversationById(convId, currentUser.id);
+            setResolvedConvo(details);
           }
         } catch (err) {
           console.error('Error resolving user chat:', err);
+        } finally {
+          setResolving(false);
         }
         return;
       }
@@ -81,8 +91,20 @@ function MessagesContent() {
     }
   }, [conversations, activeConversationId, conversationIdParam, userIdParam, currentUser, convsLoading]);
 
-  const activeConv = conversations.find(c => c.id === activeConversationId);
-  const otherParticipant = activeConv?.participants[0];
+  // Sync resolvedConvo from conversations list if possible
+  useEffect(() => {
+    if (activeConversationId) {
+      const found = conversations.find(c => c.id === activeConversationId);
+      if (found) {
+        setResolvedConvo(found);
+      } else if (!resolvedConvo && currentUser) {
+        // Fetch manually if missing from list
+        chatService.getConversationById(activeConversationId, currentUser.id).then(setResolvedConvo);
+      }
+    }
+  }, [activeConversationId, conversations, currentUser]);
+
+  const otherParticipant = resolvedConvo?.participants?.[0];
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

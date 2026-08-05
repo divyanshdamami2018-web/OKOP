@@ -103,5 +103,49 @@ export const chatService = {
       .is('read_at', null);
 
     if (error) console.error('Error marking as read:', error);
+  },
+
+  async getConversationById(conversationId: string, userId: string): Promise<Conversation | null> {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select(`
+        id,
+        is_group,
+        name,
+        created_at,
+        conversation_participants (
+          user_id,
+          profiles (
+            id,
+            full_name,
+            avatar_url,
+            status,
+            role
+          )
+        )
+      `)
+      .eq('id', conversationId)
+      .single();
+
+    if (error || !data) return null;
+
+    const otherParticipants = (data.conversation_participants || [])
+      .filter((p: any) => p.user_id !== userId)
+      .map((p: any) => ({
+        id: p.profiles?.id,
+        name: p.profiles?.full_name || 'Campus User',
+        avatar: p.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`,
+        username: p.profiles?.username || 'user',
+        status: p.profiles?.status || 'offline',
+        role: p.profiles?.role || 'student'
+      }));
+
+    return {
+      id: data.id,
+      is_group: data.is_group,
+      name: data.name,
+      participants: otherParticipants,
+      unreadCount: 0
+    } as any;
   }
 };

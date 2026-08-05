@@ -514,26 +514,24 @@ CREATE POLICY "Checkins viewable by everyone" ON meet_spot_checkins FOR SELECT U
 CREATE POLICY "Users can check themselves in" ON meet_spot_checkins FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update their checkins" ON meet_spot_checkins FOR UPDATE USING (auth.uid() = user_id);
 
--- MESSAGING
+-- MESSAGING RLS (NON-RECURSIVE)
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Conversations select policy" ON conversations FOR SELECT USING (
-  id IN (SELECT conversation_id FROM conversation_participants WHERE user_id = auth.uid())
+  EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = id AND user_id = auth.uid())
 );
 CREATE POLICY "Conversations insert policy" ON conversations FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Participants select policy" ON conversation_participants FOR SELECT USING (
-  conversation_id IN (SELECT cp.conversation_id FROM conversation_participants cp WHERE cp.user_id = auth.uid())
-);
+CREATE POLICY "Participants select policy" ON conversation_participants FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Participants insert policy" ON conversation_participants FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Messages select policy" ON messages FOR SELECT USING (
-  conversation_id IN (SELECT cp.conversation_id FROM conversation_participants cp WHERE cp.user_id = auth.uid())
+  EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = auth.uid())
 );
 CREATE POLICY "Messages insert policy" ON messages FOR INSERT WITH CHECK (
   auth.uid() = sender_id AND
-  conversation_id IN (SELECT cp.conversation_id FROM conversation_participants cp WHERE cp.user_id = auth.uid())
+  EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = auth.uid())
 );
 
 -- SOCIAL (New)
