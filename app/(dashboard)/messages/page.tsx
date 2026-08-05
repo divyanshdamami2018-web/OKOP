@@ -23,6 +23,7 @@ import { useTypingIndicator } from '@/hooks/useTyping';
 import { usePresence } from '@/hooks/usePresence';
 import { useAuthStore } from '@/store/auth.store';
 import { supabase } from '@/lib/supabase';
+import { chatService } from '@/services/chat.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -177,7 +178,7 @@ function MessagesContent() {
                   <div>
                     <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg tracking-tight flex items-center gap-2">
                       {otherParticipant?.name || 'Loading...'}
-                      {activeConv.is_group && <span className="bg-brand-primary/20 text-brand-primary text-[10px] px-2 py-0.5 rounded-md uppercase font-black">Group</span>}
+                      {resolvedConvo?.is_group && <span className="bg-brand-primary/20 text-brand-primary text-[10px] px-2 py-0.5 rounded-md uppercase font-black">Group</span>}
                     </h2>
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
                       {otherParticipant && isOnline(otherParticipant.id) ? (
