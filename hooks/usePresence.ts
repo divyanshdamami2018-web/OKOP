@@ -11,7 +11,8 @@ export function usePresence() {
   useEffect(() => {
     if (!profile) return;
 
-    const channel = supabase.channel('global_presence', {
+    const channelName = `presence_${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(channelName, {
       config: {
         presence: {
           key: profile.id,

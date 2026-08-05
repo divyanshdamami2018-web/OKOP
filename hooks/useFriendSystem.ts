@@ -58,8 +58,9 @@ export function useFriendSystem() {
     if (user) {
       fetchFriendsData();
 
+      const channelName = `friends_${user.id}_${Math.random().toString(36).substring(7)}`;
       const channel = supabase
-        .channel(`friends_${user.id}`)
+        .channel(channelName)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests' }, () => fetchFriendsData())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'friends' }, () => fetchFriendsData())
         .subscribe();

@@ -94,8 +94,9 @@ export function useActivityDetail(id: string) {
 
     fetchDetails();
 
+    const channelName = `activity_detail_${id}_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel(`activity_detail_${id}`)
+      .channel(channelName)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

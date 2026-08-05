@@ -71,8 +71,9 @@ export function usePosts() {
   useEffect(() => {
     fetchPosts();
 
+    const channelName = `posts_realtime_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel('posts_realtime')
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchPosts())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, () => fetchPosts())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_comments' }, () => fetchPosts())

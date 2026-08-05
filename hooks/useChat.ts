@@ -28,8 +28,9 @@ export function useChatRoom(conversationId: string | null) {
 
     if (!conversationId) return;
 
+    const channelName = `chat_${conversationId}_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel(`chat_${conversationId}`)
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',

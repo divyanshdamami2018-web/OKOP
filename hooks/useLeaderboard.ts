@@ -46,8 +46,9 @@ export function useLeaderboard() {
     fetchLeaderboard();
 
     // Subscribe to profile changes to keep XP live
+    const channelName = `leaderboard_updates_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel('leaderboard_updates')
+      .channel(channelName)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => {
         fetchLeaderboard();
       })

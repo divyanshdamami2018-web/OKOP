@@ -32,8 +32,9 @@ export function useConversations() {
     if (!profile) return;
 
     // Real-time conversation list updates
+    const channelName = `convo_list_${profile.id}_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel('convo_list')
+      .channel(channelName)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -73,8 +74,9 @@ export function useChat(conversationId: string | null) {
 
     if (!conversationId) return;
 
+    const channelName = `chat_${conversationId}_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel(`chat_${conversationId}`)
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',

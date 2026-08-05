@@ -12,7 +12,8 @@ export function useTypingIndicator(conversationId: string | null) {
   useEffect(() => {
     if (!conversationId || !profile) return;
 
-    const channel = supabase.channel(`typing_${conversationId}`, {
+    const channelName = `typing_${conversationId}_${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(channelName, {
       config: {
         presence: {
           key: profile.id,
