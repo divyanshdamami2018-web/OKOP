@@ -17,7 +17,7 @@ export function useActivities() {
         .from('activity_feed')
         .select('*')
         .order('start_time', { ascending: true })
-        .limit(20); // cap results for speed
+        .limit(20);
 
       if (error) throw error;
 
@@ -66,8 +66,8 @@ export function useActivities() {
     const channelName = `activities_realtime_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
       .channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, fetchActivities)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_registrations' }, fetchActivities)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => fetchActivities())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_registrations' }, () => fetchActivities())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };

@@ -16,15 +16,20 @@ export function useJoinActivity(activityId: string) {
         return;
       }
 
-      const { data } = await supabase
-        .from('event_registrations')
-        .select('*')
-        .eq('event_id', activityId)
-        .eq('user_id', user.id)
-        .maybeSingle();
+      try {
+        const { data } = await supabase
+          .from('event_registrations')
+          .select('*')
+          .eq('event_id', activityId)
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      setIsJoined(!!data);
-      setIsLoading(false);
+        setIsJoined(!!data);
+      } catch (err) {
+        console.error('Join check error:', err);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     checkJoinStatus();
