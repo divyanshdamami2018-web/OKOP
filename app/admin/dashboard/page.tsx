@@ -235,10 +235,6 @@ export default function AdminDashboard() {
                           <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">2m ago</span>
                         </div>
                         <p className="text-[10px] text-slate-500 line-clamp-1"><span className="text-slate-900 dark:text-white font-bold">Aryan Shah</span> checked into <span className="text-brand-primary">Main Library</span></p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
                 </div>
 
                 <button className="w-full py-3 bg-slate-900/50 hover:bg-slate-900 border border-white/5 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all">
