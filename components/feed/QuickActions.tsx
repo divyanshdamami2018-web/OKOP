@@ -14,18 +14,13 @@ import {
 import { motion } from 'framer-motion';
 
 const ACTIONS = [
-  { label: 'Host Event', icon: Plus, color: 'bg-brand-primary', href: '#' },
-  { label: 'Find Teammate', icon: Users, color: 'bg-brand-secondary', href: '#' },
-  { label: 'Share Notes', icon: BookOpen, color: 'bg-brand-success', href: '#' },
-  { label: 'Post Moment', icon: Sparkles, color: 'bg-brand-accent', href: '#' },
-  { label: 'Sell Item', icon: ShoppingBag, color: 'bg-amber-500', href: '#' },
-  { label: 'Report Lost', icon: HelpCircle, color: 'bg-brand-danger', href: '#' },
+  { label: 'Host Event', icon: Plus, color: 'bg-brand-primary' },
+  { label: 'Find Teammate', icon: Users, color: 'bg-brand-secondary' },
+  { label: 'Share Notes', icon: BookOpen, color: 'bg-brand-success' },
+  { label: 'Share Vibe', icon: Sparkles, color: 'bg-brand-accent' },
+  { label: 'Post Moment', icon: Megaphone, color: 'bg-amber-500' },
+  { label: 'Report Lost', icon: HelpCircle, color: 'bg-brand-danger' },
 ];
-
-import { CreateActivityModal } from '../activities/CreateActivityModal';
-import { CreateMomentModal } from './CreateMomentModal';
-import { CreatePostModal } from './CreatePostModal';
-import { useRouter } from 'next/navigation';
 
 export const QuickActions = () => {
   const router = useRouter();
@@ -55,15 +50,6 @@ export const QuickActions = () => {
         break;
     }
   };
-
-  const ACTIONS = [
-    { label: 'Host Event', icon: Plus, color: 'bg-brand-primary' },
-    { label: 'Find Teammate', icon: Users, color: 'bg-brand-secondary' },
-    { label: 'Share Notes', icon: BookOpen, color: 'bg-brand-success' },
-    { label: 'Share Vibe', icon: Sparkles, color: 'bg-brand-accent' },
-    { label: 'Post Moment', icon: Megaphone, color: 'bg-amber-500' },
-    { label: 'Report Lost', icon: HelpCircle, color: 'bg-brand-danger' },
-  ];
 
   return (
     <div className="space-y-4">

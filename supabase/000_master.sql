@@ -409,14 +409,17 @@ CREATE POLICY "Friends viewable by everyone" ON friends FOR SELECT USING (true);
 -- COMMUNITIES
 ALTER TABLE communities ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Communities viewable by everyone" ON communities FOR SELECT USING (true);
-CREATE POLICY "Users can create communities" ON communities FOR INSERT WITH CHECK (auth.uid() = creator_id);
+CREATE POLICY "Users can create communities" ON communities FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Admins update communities" ON communities FOR UPDATE USING (
   EXISTS (SELECT 1 FROM community_members WHERE community_id = communities.id AND user_id = auth.uid() AND role IN ('admin', 'moderator'))
 );
 
 ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Members viewable by everyone" ON community_members FOR SELECT USING (true);
-CREATE POLICY "Users can join communities" ON community_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can join/add members" ON community_members FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Admins can update members" ON community_members FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM community_members WHERE community_id = community_members.community_id AND user_id = auth.uid() AND role = 'admin')
+);
 
 -- EVENTS
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;

@@ -23,16 +23,27 @@ export const communitiesService = {
   },
 
   async createCommunity(userId: string, name: string, description: string, category: string) {
-    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const slug = name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
+    // Check if slug exists
+    const { data: existing } = await supabase
+        .from('communities')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle();
+
+    const finalSlug = existing ? `${slug}-${Math.floor(Math.random() * 1000)}` : slug;
+
     const { data, error } = await supabase
       .from('communities')
       .insert({
         creator_id: userId,
-        name,
-        slug,
-        description,
+        name: name.trim(),
+        slug: finalSlug,
+        description: description.trim(),
         category,
-        image_url: `https://api.dicebear.com/7.x/identicon/svg?seed=${slug}`
+        image_url: `https://api.dicebear.com/7.x/identicon/svg?seed=${finalSlug}`,
+        member_count: 1
       })
       .select()
       .single();

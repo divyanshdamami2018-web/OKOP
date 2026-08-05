@@ -82,7 +82,7 @@ export const Navbar = () => {
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-700 px-6 ${
+      <nav className={`fixed top-0 left-0 right-0 md:left-24 z-[100] transition-all duration-700 px-6 ${
         isScrolled ? 'py-4' : 'py-8'
       }`}>
         <div className={`max-w-7xl mx-auto glass-card rounded-[2.5rem] px-8 py-3.5 flex items-center justify-between border-white/40 dark:border-white/5 shadow-2xl transition-all duration-700 ${

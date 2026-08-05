@@ -43,10 +43,14 @@ function MessagesContent() {
 
   useEffect(() => {
     async function resolveParams() {
+      // Prioritize explicit ID
       if (conversationIdParam) {
         setActiveConversationId(conversationIdParam);
-      } else if (userIdParam && currentUser) {
-        // Find or create conversation
+        return;
+      }
+
+      // If we have a user ID, find or create conversation
+      if (userIdParam && currentUser) {
         try {
           const { data: existing } = await supabase
             .rpc('get_conversation_between_users', {
@@ -57,6 +61,7 @@ function MessagesContent() {
           if (existing && existing.length > 0) {
             setActiveConversationId(existing[0].id);
           } else {
+            // Create new conversation
             const { data: conv, error: convErr } = await supabase
               .from('conversations')
               .insert({ is_group: false })
@@ -75,12 +80,19 @@ function MessagesContent() {
         } catch (err) {
           console.error('Error resolving user chat:', err);
         }
-      } else if (conversations.length > 0 && !activeConversationId) {
+        return;
+      }
+
+      // Fallback: Pick first conversation if none selected
+      if (conversations.length > 0 && !activeConversationId) {
         setActiveConversationId(conversations[0].id);
       }
     }
-    resolveParams();
-  }, [conversations, activeConversationId, conversationIdParam, userIdParam, currentUser]);
+
+    if (currentUser && !convsLoading) {
+      resolveParams();
+    }
+  }, [conversations, activeConversationId, conversationIdParam, userIdParam, currentUser, convsLoading]);
 
   const activeConv = conversations.find(c => c.id === activeConversationId);
   const otherParticipant = activeConv?.participants[0];

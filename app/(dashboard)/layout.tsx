@@ -20,7 +20,7 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col md:ml-24 transition-all duration-500">
-        <main className="flex-1 pb-24 md:pb-10 relative z-10">
+        <main className="flex-1 pt-28 md:pt-32 pb-24 md:pb-10 relative z-10">
           {children}
         </main>
       </div>
