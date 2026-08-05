@@ -54,6 +54,7 @@ export default function MessagesPage() {
           is_ghost_mode: profile?.is_ghost_mode || false,
           onboarding_completed: profile?.onboarding_completed ?? true,
           is_profile_public: profile?.is_profile_public ?? true,
+          role: profile?.role || 'student',
           status: profile?.status || 'offline',
           created_at: profile?.created_at || new Date().toISOString(),
           hide_email: profile?.hide_email ?? false,
