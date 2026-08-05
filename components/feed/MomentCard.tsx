@@ -37,7 +37,7 @@ export const MomentCard = ({ moment }: { moment: Moment }) => {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      className="flex-shrink-0 w-48 h-56 rounded-[2.5rem] glass-card p-5 flex flex-col justify-between relative group hover:border-brand-primary/30 transition-all border-white/50 dark:border-white/5 shadow-premium"
+      className="flex-shrink-0 w-48 h-56 rounded-[2.5rem] glass-card p-5 flex flex-col justify-between relative group hover:border-brand-primary/30 transition-all border border-slate-200 dark:border-white/5 shadow-premium bg-white/70 dark:bg-slate-900/40 backdrop-blur-2xl"
     >
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-24 h-24 bg-brand-primary/5 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />

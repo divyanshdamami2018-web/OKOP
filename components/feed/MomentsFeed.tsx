@@ -21,18 +21,18 @@ export const MomentsFeed: React.FC = () => {
         {/* Add Moment Trigger */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex-shrink-0 w-32 h-44 rounded-3xl bg-slate-900 border-2 border-dashed border-slate-800 flex flex-col items-center justify-center gap-3 group hover:border-blue-500/50 hover:bg-slate-800/50 transition-all"
+          className="flex-shrink-0 w-32 h-44 rounded-3xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-3 group hover:border-brand-primary/50 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all"
         >
-          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 group-hover:text-blue-500 group-hover:bg-blue-500/10 transition-all">
+          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-brand-primary group-hover:bg-brand-primary/10 transition-all">
             <Plus size={20} />
           </div>
-          <span className="text-xs font-bold text-slate-500 group-hover:text-slate-300">Post Status</span>
+          <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">Post Status</span>
         </button>
 
         {loading ? (
           <div className="flex gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="w-32 h-44 rounded-3xl bg-slate-900 animate-pulse" />
+              <div key={i} className="w-32 h-44 rounded-3xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
             ))}
           </div>
         ) : (

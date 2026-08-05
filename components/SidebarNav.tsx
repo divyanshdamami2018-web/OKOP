@@ -71,7 +71,7 @@ export const SidebarNav: React.FC = () => {
   return (
     <>
       {/* Side Navigation - Desktop */}
-      <aside className="fixed left-0 top-0 h-screen w-24 bg-slate-950/40 backdrop-blur-2xl border-r border-white/5 flex flex-col items-center py-8 z-50 max-md:hidden">
+      <aside className="fixed left-0 top-0 h-screen w-24 bg-white/40 dark:bg-slate-950/40 backdrop-blur-2xl border-r border-slate-200 dark:border-white/5 flex flex-col items-center py-8 z-50 max-md:hidden">
         {/* Logo */}
         <Link href="/feed" className="mb-12 relative group">
           <motion.div
@@ -101,18 +101,18 @@ export const SidebarNav: React.FC = () => {
             <motion.div
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
-              className="w-14 h-14 rounded-2xl bg-slate-900/50 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-brand-primary/50 transition-all shadow-xl group"
+              className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-400 hover:text-brand-primary hover:border-brand-primary/50 transition-all shadow-xl group"
             >
               <Plus size={28} className="group-hover:text-brand-primary transition-colors" />
             </motion.div>
           </Link>
 
-          <div className="w-10 h-px bg-white/5" />
+          <div className="w-10 h-px bg-slate-200 dark:bg-white/5" />
 
           <Link href="/profile" className="relative group">
             <motion.div
               whileHover={{ scale: 1.1 }}
-              className="w-12 h-12 rounded-2xl bg-slate-800 overflow-hidden ring-2 ring-transparent hover:ring-brand-primary transition-all cursor-pointer p-0.5"
+              className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden ring-2 ring-transparent hover:ring-brand-primary transition-all cursor-pointer p-0.5"
             >
               <img
                 src={user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || 'default'}`}

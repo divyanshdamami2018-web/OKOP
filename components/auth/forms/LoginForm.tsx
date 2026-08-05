@@ -51,8 +51,8 @@ export const LoginForm = () => {
 
       if (authError) throw authError;
 
-      router.push('/feed');
-      router.refresh();
+      // Use window.location for a hard refresh to ensure session is picked up by middleware
+      window.location.href = '/feed';
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please try again.');
     } finally {

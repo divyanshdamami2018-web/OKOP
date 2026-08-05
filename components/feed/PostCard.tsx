@@ -73,21 +73,21 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike }) => {
               onClick={onLike}
               className={`flex items-center gap-2 group transition-all ${post.is_liked ? 'text-brand-danger' : 'text-slate-500'}`}
             >
-              <div className={`p-3 rounded-2xl transition-all ${post.is_liked ? 'bg-brand-danger/10' : 'bg-slate-50 dark:bg-slate-900 group-hover:bg-brand-danger/5'}`}>
+              <div className={`p-3 rounded-2xl transition-all ${post.is_liked ? 'bg-brand-danger/10' : 'bg-slate-100 dark:bg-slate-900 group-hover:bg-brand-danger/5'}`}>
                 <Heart size={20} fill={post.is_liked ? 'currentColor' : 'none'} />
               </div>
               <span className="text-sm font-black tracking-widest">{post.likes_count || 0}</span>
             </button>
 
             <button className="flex items-center gap-2 group text-slate-500 transition-all">
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 group-hover:bg-brand-primary/5 transition-all">
+              <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 group-hover:bg-brand-primary/5 transition-all">
                 <MessageCircle size={20} />
               </div>
               <span className="text-sm font-black tracking-widest">{post.comments_count || 0}</span>
             </button>
           </div>
 
-          <button className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 text-slate-500 hover:text-brand-primary transition-all">
+          <button className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-brand-primary transition-all">
             <Share2 size={20} />
           </button>
         </div>

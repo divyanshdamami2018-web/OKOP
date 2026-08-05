@@ -51,38 +51,38 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
               <img
                 src={activity.creator.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${activity.creator.name}`}
                 alt={activity.creator.name}
-                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-800 group-hover:ring-brand-primary/50 transition-all shadow-lg"
+                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-100 dark:ring-slate-800 group-hover:ring-brand-primary/50 transition-all shadow-lg"
               />
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-brand-success border-2 border-slate-950 rounded-full" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-brand-success border-2 border-white dark:border-slate-950 rounded-full" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-slate-100 font-bold leading-tight truncate group-hover:text-brand-primary transition-colors">
+              <h3 className="text-slate-900 dark:text-slate-100 font-bold leading-tight truncate group-hover:text-brand-primary transition-colors">
                 {activity.title}
               </h3>
               <p className="text-slate-500 text-xs font-medium">@{activity.creator.name.toLowerCase().replace(/\s/g, '')}</p>
             </div>
           </div>
-          <span className="px-3 py-1 rounded-xl bg-slate-950/50 text-brand-primary text-[10px] font-black uppercase tracking-widest border border-brand-primary/20 backdrop-blur-md">
+          <span className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-950/50 text-brand-primary text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-brand-primary/20 backdrop-blur-md">
             {activity.category}
           </span>
         </div>
 
         <div className="space-y-3 mb-6">
-          <div className="flex items-center gap-2.5 text-slate-400 text-sm">
-            <div className="p-1.5 bg-slate-950/50 rounded-lg border border-slate-800">
-              <MapPin size={14} className="text-slate-500" />
+          <div className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 text-sm">
+            <div className="p-1.5 bg-slate-50 dark:bg-slate-950/50 rounded-lg border border-slate-200 dark:border-slate-800">
+              <MapPin size={14} className="text-slate-400 dark:text-slate-500" />
             </div>
             <span className="truncate font-medium">{activity.location}</span>
           </div>
-          <div className="flex items-center gap-2.5 text-slate-400 text-sm">
-            <div className="p-1.5 bg-slate-950/50 rounded-lg border border-slate-800">
-              <Clock size={14} className="text-slate-500" />
+          <div className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 text-sm">
+            <div className="p-1.5 bg-slate-50 dark:bg-slate-950/50 rounded-lg border border-slate-200 dark:border-slate-800">
+              <Clock size={14} className="text-slate-400 dark:text-slate-500" />
             </div>
             <span className="font-medium">{new Date(activity.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}</span>
           </div>
-          <div className="flex items-center gap-2.5 text-slate-400 text-sm">
-            <div className="p-1.5 bg-slate-950/50 rounded-lg border border-slate-800">
-              <Users size={14} className="text-slate-500" />
+          <div className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 text-sm">
+            <div className="p-1.5 bg-slate-50 dark:bg-slate-950/50 rounded-lg border border-slate-200 dark:border-slate-800">
+              <Users size={14} className="text-slate-400 dark:text-slate-500" />
             </div>
             <span className="font-medium text-brand-primary">{activity.currentParticipants}/{activity.maxParticipants} <span className="text-slate-500">attending</span></span>
           </div>
@@ -90,7 +90,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
 
         <div className="flex flex-wrap gap-2 mb-6 h-6 overflow-hidden">
           {activity.tags.map((tag) => (
-            <span key={tag} className="text-[9px] font-black uppercase tracking-tighter text-slate-500 bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-800">
+            <span key={tag} className="text-[9px] font-black uppercase tracking-tighter text-slate-500 bg-slate-100 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800">
               #{tag}
             </span>
           ))}
@@ -103,9 +103,9 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
           disabled={isLoading || isActionLoading}
           className={`flex-1 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 ${
             isJoined
-              ? 'bg-brand-success/10 text-brand-success border border-brand-success/30 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30'
+              ? 'bg-brand-success/10 text-brand-success border border-brand-success/30 hover:bg-brand-danger/10 hover:text-brand-danger hover:border-brand-danger/30'
               : isActionLoading
-              ? 'bg-slate-800 text-slate-500'
+              ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
               : 'bg-brand-gradient text-white shadow-xl shadow-brand-primary/20 hover:opacity-90'
           }`}
         >
@@ -127,7 +127,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
 
         <Link
           href={`/activities/${activity.id}`}
-          className="p-3.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-2xl hover:text-brand-primary hover:border-brand-primary/30 transition-all active:scale-95 shadow-lg"
+          className="p-3.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl hover:text-brand-primary hover:border-brand-primary/30 transition-all active:scale-95 shadow-lg"
         >
           <ArrowRight size={20} strokeWidth={2.5} />
         </Link>
