@@ -1,155 +1,74 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { chatService } from '@/services/chat.service';
+import { useChatStore } from '@/store/chat.store';
+import { useAuthStore } from '@/store/auth.store';
 import { supabase } from '@/lib/supabase';
-import { Conversation, Message, UserProfile } from '@/types';
-import { useAuth } from '@/components/auth/AuthProvider';
 
 export function useConversations() {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const { profile } = useAuthStore();
+  const { conversations, setConversations } = useChatStore();
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
 
-  useEffect(() => {
-    async function fetchConversations() {
-      if (!user) return;
-
-      // Fetch conversations where the user is a participant
-      const { data, error } = await supabase
-        .from('conversation_participants')
-        .select(`
-          conversation_id,
-          conversations (
-            id,
-            created_at,
-            messages (
-              id,
-              content,
-              created_at,
-              sender_id
-            ),
-            conversation_participants (
-              user_id,
-              profiles (
-                id,
-                full_name,
-                avatar_url,
-                status,
-                role
-              )
-            )
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error fetching conversations:', error);
-        setLoading(false);
-        return;
-      }
-
-      const mapped: Conversation[] = (data || []).map((item: any) => {
-        const conv = item.conversations;
-        const lastMsg = conv.messages?.sort((a: any, b: any) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )[0];
-
-        // Find the other participant(s)
-        const participants = conv.conversation_participants
-          .filter((p: any) => p.user_id !== user.id)
-          .map((p: any) => ({
-            id: p.profiles.id,
-            name: p.profiles.full_name,
-            username: p.profiles.username || 'user',
-            avatar: p.profiles.avatar_url,
-            status: p.profiles.status || 'offline',
-            role: p.profiles.role || 'student',
-            college: p.profiles.college || 'Stanford',
-            interests: p.profiles.interests || [],
-            skills: p.profiles.skills || [],
-            xp_points: p.profiles.xp_points || 0,
-            daily_streak: p.profiles.daily_streak || 0,
-            is_ghost_mode: p.profiles.is_ghost_mode || false,
-            onboarding_completed: true,
-            is_profile_public: true,
-            hide_email: false,
-            hide_phone: false,
-            hide_semester: false,
-            created_at: p.profiles.created_at || new Date().toISOString()
-          }));
-
-        return {
-          id: conv.id,
-          is_group: conv.is_group || false,
-          participants: participants,
-          unreadCount: 0, // Would need a more complex query or table for this
-          lastMessage: lastMsg ? {
-            id: lastMsg.id,
-            text: lastMsg.content,
-            senderId: lastMsg.sender_id,
-            timestamp: lastMsg.created_at,
-            isRead: lastMsg.is_read || false
-          } : undefined
-        };
-      });
-
-      setConversations(mapped);
+  const fetch = useCallback(async () => {
+    if (!profile) return;
+    try {
+      const data = await chatService.getConversations(profile.id);
+      setConversations(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
     }
+  }, [profile, setConversations]);
 
-    fetchConversations();
+  useEffect(() => {
+    fetch();
 
+    if (!profile) return;
+
+    // Real-time conversation list updates
     const channel = supabase
-      .channel('conversations_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-        fetchConversations();
-      })
+      .channel('convo_list')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'conversation_participants',
+        filter: `user_id=eq.${profile.id}`
+      }, () => fetch())
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [profile, fetch]);
 
   return { conversations, loading };
 }
 
 export function useChat(conversationId: string | null) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { profile } = useAuthStore();
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMessages = useCallback(async () => {
+    if (!conversationId) return;
+    setLoading(true);
+    try {
+      const data = await chatService.getMessages(conversationId);
+      setMessages(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId]);
 
   useEffect(() => {
-    if (!conversationId) {
-      setMessages([]);
-      setLoading(false);
-      return;
-    }
-
-    async function fetchMessages() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching messages:', error);
-        return;
-      }
-
-      setMessages((data || []).map((m: any) => ({
-        id: m.id,
-        text: m.content,
-        senderId: m.sender_id,
-        timestamp: m.created_at,
-        isRead: m.is_read || false
-      })));
-      setLoading(false);
-    }
-
     fetchMessages();
+
+    if (!conversationId) return;
 
     const channel = supabase
       .channel(`chat_${conversationId}`)
@@ -159,13 +78,13 @@ export function useChat(conversationId: string | null) {
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`
       }, (payload: any) => {
-        const newMessage = payload.new as any;
-        setMessages((prev) => [...prev, {
-          id: newMessage.id,
-          text: newMessage.content,
-          senderId: newMessage.sender_id,
-          timestamp: newMessage.created_at,
-          isRead: newMessage.is_read || false
+        const msg = payload.new;
+        setMessages(prev => [...prev, {
+          id: msg.id,
+          senderId: msg.sender_id,
+          text: msg.content,
+          timestamp: msg.created_at,
+          isRead: false
         }]);
       })
       .subscribe();
@@ -173,20 +92,12 @@ export function useChat(conversationId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, fetchMessages]);
 
   const sendMessage = async (text: string) => {
-    if (!conversationId || !user) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        content: text
-      });
-
-    if (error) throw error;
+    if (!conversationId || !profile) return;
+    const msg = await chatService.sendMessage(conversationId, profile.id, text);
+    return msg;
   };
 
   return { messages, loading, sendMessage };

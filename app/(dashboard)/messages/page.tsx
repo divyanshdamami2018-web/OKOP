@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { SidebarNav } from '@/components/SidebarNav';
 import { ConversationList } from '@/components/messages/ConversationList';
 import { MessageItem } from '@/components/messages/MessageItem';
@@ -12,35 +12,31 @@ import {
   MessageSquare,
   Loader2,
   User,
-  Search,
-  MoreVertical,
   Plus,
   Smile,
   Paperclip,
-  Sparkles
+  Sparkles,
+  ChevronRight
 } from 'lucide-react';
 import { useConversations, useChat } from '@/hooks/useMessages';
-import { supabase } from '@/lib/supabase';
-import { UserProfile, Conversation } from '@/types';
+import { useTypingIndicator } from '@/hooks/useTyping';
+import { usePresence } from '@/hooks/usePresence';
+import { useAuthStore } from '@/store/auth.store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-
-import { useConversations, useChat } from '@/hooks/useMessages';
-import { supabase } from '@/lib/supabase';
-import { UserProfile, Conversation } from '@/types';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense } from 'react';
 
 function MessagesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const conversationIdParam = searchParams.get('id');
 
-  const { profile: currentUser, loading: authLoading } = useAuth();
+  const { profile: currentUser } = useAuthStore();
   const { conversations, loading: convsLoading } = useConversations();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const { messages, loading: msgsLoading, sendMessage } = useChat(activeConversationId);
+  const { typingUsers, setTyping } = useTypingIndicator(activeConversationId);
+  const { isOnline } = usePresence();
+
   const [inputText, setInputText] = useState('');
 
   useEffect(() => {
@@ -61,6 +57,7 @@ function MessagesContent() {
     try {
       await sendMessage(inputText.trim());
       setInputText('');
+      setTyping(false);
     } catch (err) {
       console.error('Failed to send message:', err);
     }
@@ -108,7 +105,7 @@ function MessagesContent() {
                         alt={otherParticipant.name}
                         className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-100 dark:ring-slate-800 shadow-xl"
                       />
-                      {otherParticipant.status === 'online' && (
+                      {isOnline(otherParticipant.id) && (
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-brand-success border-4 border-white dark:border-slate-950 rounded-full shadow-lg" />
                       )}
                     </motion.div>
@@ -123,11 +120,13 @@ function MessagesContent() {
                       {activeConv.is_group && <span className="bg-brand-primary/20 text-brand-primary text-[10px] px-2 py-0.5 rounded-md uppercase font-black">Group</span>}
                     </h2>
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                      {otherParticipant?.status === 'online' ? (
+                      {otherParticipant && isOnline(otherParticipant.id) ? (
                         <>
                           <span className="w-1.5 h-1.5 bg-brand-success rounded-full animate-pulse" />
                           Active now
                         </>
+                      ) : typingUsers.length > 0 ? (
+                        <span className="text-brand-primary animate-pulse italic">typing...</span>
                       ) : (
                         'Campus Community'
                       )}
@@ -168,12 +167,12 @@ function MessagesContent() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {messages.map((msg, index) => (
+                    {messages.map((msg: any) => (
                       <MessageItem
                         key={msg.id}
                         message={msg}
                         isMe={msg.senderId === currentUser?.id}
-                        sender={msg.senderId === currentUser?.id ? currentUser : otherParticipant}
+                        sender={msg.senderId === currentUser?.id ? currentUser! : otherParticipant}
                       />
                     ))}
                   </div>
@@ -194,7 +193,11 @@ function MessagesContent() {
                     <input
                       type="text"
                       value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
+                      onChange={(e) => {
+                        setInputText(e.target.value);
+                        setTyping(e.target.value.length > 0);
+                      }}
+                      onBlur={() => setTyping(false)}
                       placeholder={`Message ${otherParticipant?.name || '...'}`}
                       className="glass-input w-full py-4 px-6 text-sm pr-24 shadow-2xl"
                     />

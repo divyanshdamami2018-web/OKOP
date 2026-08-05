@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     role TEXT DEFAULT 'student' CHECK (role IN ('student', 'moderator', 'admin')),
     xp_points INTEGER DEFAULT 0,
     daily_streak INTEGER DEFAULT 0,
+    follower_count INTEGER DEFAULT 0,
+    following_count INTEGER DEFAULT 0,
+    post_count INTEGER DEFAULT 0,
     last_active_at TIMESTAMPTZ DEFAULT NOW(),
     is_profile_public BOOLEAN DEFAULT TRUE,
     is_ghost_mode BOOLEAN DEFAULT FALSE,
@@ -89,6 +92,7 @@ CREATE TABLE IF NOT EXISTS events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     creator_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
     community_id UUID REFERENCES communities(id) ON DELETE SET NULL,
+    conversation_id UUID REFERENCES conversations(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     description TEXT,
     category TEXT,
@@ -172,6 +176,9 @@ CREATE TABLE IF NOT EXISTS messages (
     sender_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     content TEXT,
     file_url TEXT,
+    is_edited BOOLEAN DEFAULT FALSE,
+    delivered_at TIMESTAMPTZ,
+    read_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -320,6 +327,32 @@ BEGIN
   UPDATE public.profiles SET xp_points = xp_points + amount WHERE id = target_user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- SOCIAL GRAPH AUTO-COUNTS
+CREATE OR REPLACE FUNCTION update_social_counts()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        IF (TG_TABLE_NAME = 'follows') THEN
+            UPDATE profiles SET follower_count = follower_count + 1 WHERE id = NEW.following_id;
+            UPDATE profiles SET following_count = following_count + 1 WHERE id = NEW.follower_id;
+        ELSIF (TG_TABLE_NAME = 'posts') THEN
+            UPDATE profiles SET post_count = post_count + 1 WHERE id = NEW.author_id;
+        END IF;
+    ELSIF (TG_OP = 'DELETE') THEN
+        IF (TG_TABLE_NAME = 'follows') THEN
+            UPDATE profiles SET follower_count = follower_count - 1 WHERE id = OLD.following_id;
+            UPDATE profiles SET following_count = following_count - 1 WHERE id = OLD.follower_id;
+        ELSIF (TG_TABLE_NAME = 'posts') THEN
+            UPDATE profiles SET post_count = post_count - 1 WHERE id = OLD.author_id;
+        END IF;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_follow_change AFTER INSERT OR DELETE ON follows FOR EACH ROW EXECUTE FUNCTION update_social_counts();
+CREATE TRIGGER on_post_change AFTER INSERT OR DELETE ON posts FOR EACH ROW EXECUTE FUNCTION update_social_counts();
 
 -- Event Feed View (For backward compatibility with UI)
 CREATE OR REPLACE VIEW activity_feed AS
