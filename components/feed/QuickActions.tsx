@@ -3,15 +3,18 @@
 import React from 'react';
 import {
   Plus,
-  Search,
-  MapPin,
   BookOpen,
   ShoppingBag,
-  Briefcase,
   HelpCircle,
-  Megaphone
+  Megaphone,
+  Users,
+  Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { CreateActivityModal } from '../activities/CreateActivityModal';
+import { CreateMomentModal } from './CreateMomentModal';
+import { CreatePostModal } from './CreatePostModal';
 
 const ACTIONS = [
   { label: 'Host Event', icon: Plus, color: 'bg-brand-primary' },
@@ -79,5 +82,3 @@ export const QuickActions = () => {
     </div>
   );
 };
-
-import { Users, Sparkles } from 'lucide-react';
