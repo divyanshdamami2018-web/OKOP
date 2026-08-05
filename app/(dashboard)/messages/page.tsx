@@ -25,51 +25,23 @@ import { UserProfile, Conversation } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function MessagesPage() {
+import { useConversations, useChat } from '@/hooks/useMessages';
+import { supabase } from '@/lib/supabase';
+import { UserProfile, Conversation } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense } from 'react';
+
+function MessagesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const conversationIdParam = searchParams.get('id');
 
+  const { profile: currentUser, loading: authLoading } = useAuth();
   const { conversations, loading: convsLoading } = useConversations();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const { messages, loading: msgsLoading, sendMessage } = useChat(activeConversationId);
   const [inputText, setInputText] = useState('');
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        setCurrentUser({
-          id: user.id,
-          name: profile?.full_name || user.user_metadata.full_name || 'Me',
-          avatar: profile?.avatar_url || user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
-          college: profile?.college || 'Stanford',
-          interests: profile?.interests || [],
-          xp_points: profile?.xp_points || 0,
-          username: profile?.username || 'user',
-          skills: profile?.skills || [],
-          daily_streak: profile?.daily_streak || 0,
-          is_ghost_mode: profile?.is_ghost_mode || false,
-          onboarding_completed: profile?.onboarding_completed ?? true,
-          is_profile_public: profile?.is_profile_public ?? true,
-          role: profile?.role || 'student',
-          status: profile?.status || 'offline',
-          created_at: profile?.created_at || new Date().toISOString(),
-          hide_email: profile?.hide_email ?? false,
-          hide_phone: profile?.hide_phone ?? false,
-          hide_semester: profile?.hide_semester ?? false
-        });
-      }
-    };
-    init();
-  }, []);
 
   useEffect(() => {
     if (conversationIdParam) {
@@ -84,7 +56,7 @@ export default function MessagesPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !activeConversationId) return;
+    if (!inputText.trim() || !activeConversationId || !currentUser) return;
 
     try {
       await sendMessage(inputText.trim());
@@ -265,5 +237,13 @@ export default function MessagesPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center"><Loader2 className="animate-spin text-brand-primary" /></div>}>
+      <MessagesContent />
+    </Suspense>
   );
 }

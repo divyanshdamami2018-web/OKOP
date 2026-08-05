@@ -6,7 +6,7 @@ import { Logo } from './Logo';
 
 export const LoadingLogo = () => {
   return (
-    <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-[9999]">
+    <div className="fixed inset-0 bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center z-[9999]">
       <div className="relative">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -32,7 +32,7 @@ export const LoadingLogo = () => {
         transition={{ delay: 0.5 }}
         className="mt-20 text-center"
       >
-        <h2 className="text-xl font-black text-white tracking-tighter uppercase">OKOP'S</h2>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase">OKOP'S</h2>
         <div className="flex items-center gap-1 justify-center mt-2">
           <div className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-bounce" />
           <div className="w-1.5 h-1.5 bg-brand-secondary rounded-full animate-bounce animate-delay-100" />

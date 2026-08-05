@@ -44,6 +44,7 @@ export function useConversations() {
 
       if (error) {
         console.error('Error fetching conversations:', error);
+        setLoading(false);
         return;
       }
 
@@ -108,7 +109,7 @@ export function useConversations() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
   return { conversations, loading };
 }

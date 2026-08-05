@@ -46,7 +46,7 @@ export default function ExplorePage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex relative overflow-hidden">
       {/* Animated Background Blobs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 -left-20 w-96 h-96 bg-brand-primary/10 rounded-full blur-[100px] animate-blob" />
@@ -57,14 +57,14 @@ export default function ExplorePage() {
         <motion.div
           animate={{ y: [0, -20, 0], rotate: [0, 10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[15%] right-[20%] text-brand-primary/20"
+          className="absolute top-[15%] right-[20%] text-brand-primary/10 dark:text-brand-primary/20"
         >
           <Sparkles size={120} />
         </motion.div>
         <motion.div
           animate={{ y: [0, 20, 0], rotate: [0, -10, 0] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-[20%] left-[15%] text-brand-secondary/20"
+          className="absolute bottom-[20%] left-[15%] text-brand-secondary/10 dark:text-brand-secondary/20"
         >
           <Compass size={140} />
         </motion.div>
@@ -74,7 +74,7 @@ export default function ExplorePage() {
 
       <main className="flex-1 md:ml-24 transition-all duration-500 relative z-10">
         {/* Modern Header */}
-        <header className="sticky top-0 z-40 bg-slate-950/40 backdrop-blur-3xl border-b border-white/5 px-6 py-6 md:py-10">
+        <header className="sticky top-0 z-40 bg-white/40 dark:bg-slate-950/40 backdrop-blur-3xl border-b border-slate-200 dark:border-white/5 px-6 py-6 md:py-10">
           <div className="max-w-7xl mx-auto space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="relative group">
@@ -95,11 +95,11 @@ export default function ExplorePage() {
 
               <div className="relative flex-1 max-w-xl group">
                 <div className="absolute -inset-1 bg-brand-gradient opacity-0 group-focus-within:opacity-10 blur-xl transition-opacity rounded-[2rem]" />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-primary transition-colors" size={20} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={20} />
                 <input
                   type="text"
                   placeholder={`Search ${activeTab.toLowerCase()}...`}
-                  className="glass-input w-full py-4 pl-12 pr-4 text-sm border-white/10 focus:border-brand-primary/40 focus:bg-slate-900/50"
+                  className="glass-input w-full py-4 pl-12 pr-4 text-sm border-slate-200 dark:border-white/10 focus:border-brand-primary/40 focus:bg-white dark:focus:bg-slate-900/50"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -107,13 +107,13 @@ export default function ExplorePage() {
             </div>
 
             {/* Sliding Background Tab Bar */}
-            <div className="flex p-1.5 bg-slate-900/50 rounded-[2rem] border border-white/5 backdrop-blur-xl w-fit">
+            <div className="flex p-1.5 bg-slate-200/50 dark:bg-slate-900/50 rounded-[2rem] border border-slate-200 dark:border-white/5 backdrop-blur-xl w-fit">
               {['All', 'Clubs', 'Interests', 'Events', 'People'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as TabType)}
                   className={`relative px-8 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap overflow-hidden ${
-                    activeTab === tab ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+                    activeTab === tab ? 'text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                   }`}
                 >
                   {activeTab === tab && (

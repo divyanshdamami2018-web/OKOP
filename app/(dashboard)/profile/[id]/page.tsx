@@ -159,17 +159,17 @@ export default function UserProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <Loader2 className="animate-spin text-brand-primary" size={40} />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center text-slate-900 dark:text-slate-100">
         <h1 className="text-2xl font-bold mb-4">User not found</h1>
-        <button onClick={() => router.push('/explore')} className="text-blue-500 hover:underline flex items-center gap-2">
+        <button onClick={() => router.push('/explore')} className="text-brand-primary hover:underline flex items-center gap-2">
           <ArrowLeft size={18} /> Back to Explore
         </button>
       </div>
@@ -177,14 +177,14 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex">
       <SidebarNav />
 
       <main className="flex-1 ml-20">
-        <header className="h-20 flex items-center justify-between px-8 border-b border-slate-900 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-40">
+        <header className="h-20 flex items-center justify-between px-8 border-b border-slate-200 dark:border-slate-900 bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl sticky top-0 z-40">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-slate-900 rounded-xl text-slate-400 transition-colors flex items-center gap-2 group"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl text-slate-500 dark:text-slate-400 transition-colors flex items-center gap-2 group"
           >
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-semibold uppercase tracking-widest">Back</span>
@@ -195,7 +195,7 @@ export default function UserProfilePage() {
               <button
                 onClick={handleMessage}
                 disabled={actionLoading}
-                className="px-6 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-300 font-bold text-sm flex items-center gap-2 hover:bg-slate-800 transition-all"
+                className="px-6 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-300 font-bold text-sm flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
               >
                 {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <MessageSquare size={16} />}
                 Message
@@ -204,8 +204,8 @@ export default function UserProfilePage() {
                 onClick={() => isFollowing ? unfollow() : follow()}
                 className={`px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${
                   isFollowing
-                  ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                  : 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700'
+                  : 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20'
                 }`}
               >
                 {isFollowing ? <UserMinus size={16} /> : <UserPlus size={16} />}
@@ -220,23 +220,23 @@ export default function UserProfilePage() {
             <div className="lg:col-span-1 space-y-6">
               <ProfileCard user={user} />
 
-              <div className="bg-slate-900/30 border border-slate-800/50 rounded-3xl p-6">
-                <div className="flex items-center gap-2 mb-4 text-emerald-500">
+              <div className="bg-white dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/50 rounded-3xl p-6">
+                <div className="flex items-center gap-2 mb-4 text-brand-success">
                   <ShieldCheck size={16} />
                   <span className="text-[10px] font-black uppercase tracking-widest">Verified Student</span>
                 </div>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">XP Points</span>
-                    <span className="text-sm font-black text-blue-500">{user.xp_points?.toLocaleString() || 0}</span>
+                    <span className="text-sm font-black text-brand-primary">{user.xp_points?.toLocaleString() || 0}</span>
                   </div>
-                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                     <div
-                      className="bg-blue-600 h-full rounded-full"
+                      className="bg-brand-primary h-full rounded-full"
                       style={{ width: `${Math.min(100, ((user.xp_points || 0) % 1000) / 10)}%` }}
                     />
                   </div>
-                  <p className="text-[10px] text-slate-600 text-center uppercase font-bold tracking-tighter">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-600 text-center uppercase font-bold tracking-tighter">
                     {1000 - ((user.xp_points || 0) % 1000)} XP to next level
                   </p>
                 </div>
@@ -244,11 +244,11 @@ export default function UserProfilePage() {
             </div>
 
             <div className="lg:col-span-2">
-              <div className="flex border-b border-slate-900 mb-8 overflow-x-auto no-scrollbar">
-                <button className="px-6 py-4 text-sm font-bold text-blue-500 border-b-2 border-blue-500 whitespace-nowrap flex items-center gap-2">
+              <div className="flex border-b border-slate-200 dark:border-slate-900 mb-8 overflow-x-auto no-scrollbar">
+                <button className="px-6 py-4 text-sm font-bold text-brand-primary border-b-2 border-brand-primary whitespace-nowrap flex items-center gap-2">
                   <Grid size={16} /> Activities
                 </button>
-                <button className="px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-300 transition-all whitespace-nowrap flex items-center gap-2">
+                <button className="px-6 py-4 text-sm font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-all whitespace-nowrap flex items-center gap-2">
                   <History size={16} /> Past Events
                 </button>
               </div>

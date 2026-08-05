@@ -74,8 +74,8 @@ export default function HomeDashboard() {
 
   const [isMomentModalOpen, setIsMomentModalOpen] = useState(false);
 
-  return (
-    <div className="max-w-7xl mx-auto px-6 space-y-12 pb-32 animate-slide-up relative overflow-hidden md:overflow-visible">
+    return (
+    <div className="max-w-7xl mx-auto px-6 space-y-12 pb-32 animate-slide-up relative overflow-hidden md:overflow-visible text-slate-900 dark:text-white">
       {/* Animated Background Mesh */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] -left-[10%] w-[60%] h-[60%] bg-brand-primary/5 blur-[120px] rounded-full animate-blob" />
@@ -92,7 +92,7 @@ export default function HomeDashboard() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-4"
           >
-            <div className="flex items-center gap-2 text-brand-primary font-black uppercase tracking-[0.3em] text-[10px] bg-brand-primary/5 w-fit px-4 py-1.5 rounded-full border border-brand-primary/10 shadow-sm">
+            <div className="flex items-center gap-2 text-brand-primary font-black uppercase tracking-[0.3em] text-[10px] bg-brand-primary/10 dark:bg-brand-primary/5 w-fit px-4 py-1.5 rounded-full border border-brand-primary/20 dark:border-brand-primary/10 shadow-sm backdrop-blur-md">
               <Target size={12} className="animate-pulse" />
               Personal Control Center
             </div>
@@ -109,7 +109,7 @@ export default function HomeDashboard() {
             <p className="text-slate-500 dark:text-slate-400 font-medium text-lg leading-relaxed">
               Your university vibe is <span className="text-brand-success font-black uppercase tracking-widest text-sm">High</span>.
             </p>
-            <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-900 rounded-full border border-slate-100 dark:border-white/5 shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-900 rounded-full border border-slate-200 dark:border-white/5 shadow-sm">
               <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div className="h-full bg-brand-primary" style={{ width: `${stats.completion}%` }} />
               </div>
@@ -120,12 +120,12 @@ export default function HomeDashboard() {
 
         <div className="flex flex-wrap items-center gap-4">
           {/* Quick Stats Pill */}
-          <div className="flex items-center gap-6 bg-white dark:bg-slate-900/50 backdrop-blur-xl p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-premium">
+          <div className="flex items-center gap-6 bg-white dark:bg-slate-900/50 backdrop-blur-xl p-6 rounded-[2.5rem] border border-slate-200 dark:border-white/5 shadow-premium">
             <div className="text-center space-y-1">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Followers</p>
               <p className="text-2xl font-black text-brand-primary">{stats.followers}</p>
             </div>
-            <div className="w-px h-10 bg-slate-100 dark:bg-white/5" />
+            <div className="w-px h-10 bg-slate-200 dark:bg-white/5" />
             <div className="text-center space-y-1">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Posts</p>
               <p className="text-2xl font-black text-brand-secondary">{stats.postsCount}</p>

@@ -27,7 +27,7 @@ export default function ActivityDetailPage() {
   const router = useRouter();
   const { activity, participants, loading } = useActivityDetail(id as string);
   const { isJoined, isLoading: joinLoading, join, leave } = useJoinActivity(id as string);
-  const { messages, sendMessage } = useChat(activity?.id || null); // Note: Should probably use a specific group_conversation_id if implemented
+  const { messages, sendMessage } = useChat(activity?.conversation_id || null);
   const [chatInput, setChatInput] = useState('');
 
   const handleSendMessage = async (e: React.FormEvent) => {

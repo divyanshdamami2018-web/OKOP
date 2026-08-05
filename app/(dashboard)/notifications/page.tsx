@@ -38,20 +38,20 @@ export default function NotificationsPage() {
   const { notifications, loading, markAsRead } = useNotifications();
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex">
       <SidebarNav />
 
       <main className="flex-1 ml-20">
-        <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-900 px-8 py-6">
+        <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-900 px-8 py-6">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-3">
-                <Bell className="text-blue-500" size={24} />
+                <Bell className="text-brand-primary" size={24} />
                 Notifications
               </h1>
               <p className="text-slate-500 text-sm mt-1">Stay updated with your campus circle.</p>
             </div>
-            <button className="p-2 hover:bg-slate-900 rounded-xl text-slate-400 transition-colors">
+            <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl text-slate-400 transition-colors">
               <MoreHorizontal size={20} />
             </button>
           </div>
@@ -65,10 +65,10 @@ export default function NotificationsPage() {
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-slate-700 mb-4">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-700 mb-4">
                 <Bell size={32} />
               </div>
-              <h3 className="text-lg font-bold text-slate-300">All caught up!</h3>
+              <h3 className="text-lg font-bold text-slate-400 dark:text-slate-300">All caught up!</h3>
               <p className="text-slate-500 text-sm mt-1">We'll notify you when something exciting happens.</p>
             </div>
           ) : (
@@ -84,8 +84,8 @@ export default function NotificationsPage() {
                     onClick={() => markAsRead(notification.id)}
                     className={`group relative p-5 rounded-2xl border transition-all cursor-pointer flex gap-4 ${
                       notification.is_read
-                        ? 'bg-slate-900/20 border-slate-800/50 grayscale-[0.5]'
-                        : 'bg-slate-900/50 border-slate-800 hover:border-blue-500/30 ring-1 ring-blue-500/5 shadow-xl shadow-blue-900/5'
+                        ? 'bg-white/40 dark:bg-slate-900/20 border-slate-100 dark:border-slate-800/50 grayscale-[0.5]'
+                        : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 hover:border-brand-primary/30 ring-1 ring-brand-primary/5 shadow-xl shadow-brand-primary/5'
                     }`}
                   >
                     <NotificationIcon type={notification.type} />

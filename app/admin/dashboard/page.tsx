@@ -57,20 +57,20 @@ export default function AdminDashboard() {
 
   return (
     <AdminGuard>
-      <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
-        <header className="h-24 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl flex items-center justify-between px-12 sticky top-0 z-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-20">
+        <header className="h-24 border-b border-slate-200 dark:border-white/5 bg-white/40 dark:bg-slate-950/50 backdrop-blur-xl flex items-center justify-between px-12 sticky top-0 z-50">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-brand-primary/10 rounded-2xl border border-brand-primary/20">
               <ShieldAlert className="text-brand-primary" size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tighter uppercase">Admin <span className="text-brand-primary">Terminal</span></h1>
+              <h1 className="text-2xl font-black tracking-tighter uppercase text-slate-900 dark:text-white">Admin <span className="text-brand-primary">Terminal</span></h1>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Global System Management</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="px-4 py-2 bg-slate-900 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="px-4 py-2 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 shadow-inner">
               System Online: {new Date().toLocaleTimeString()}
             </div>
           </div>
@@ -128,9 +128,9 @@ export default function AdminDashboard() {
                           <tr key={user.id} className="group hover:bg-white/[0.02] transition-colors">
                             <td className="py-4">
                               <div className="flex items-center gap-3">
-                                <img src={user.avatar} className="w-10 h-10 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-brand-primary/30 transition-all" />
+                                <img src={user.avatar} className="w-10 h-10 rounded-xl object-cover ring-2 ring-slate-100 dark:ring-slate-800 group-hover:ring-brand-primary/30 transition-all" />
                                 <div>
-                                  <p className="text-sm font-black text-slate-100">{user.name}</p>
+                                  <p className="text-sm font-black text-slate-900 dark:text-slate-100">{user.name}</p>
                                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">@{user.username}</p>
                                 </div>
                               </div>
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
                               <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-md border ${
                                 user.role === 'admin'
                                 ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/20'
-                                : 'bg-slate-900 text-slate-400 border-white/5'
+                                : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/5'
                               }`}>
                                 {user.role}
                               </span>
@@ -152,13 +152,13 @@ export default function AdminDashboard() {
                             </td>
                             <td className="py-4 text-right">
                               <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button className="p-2 bg-slate-900 rounded-lg text-slate-500 hover:text-brand-primary hover:bg-brand-primary/10 transition-all">
+                                <button className="p-2 bg-slate-100 dark:bg-slate-900 rounded-lg text-slate-500 hover:text-brand-primary hover:bg-brand-primary/10 transition-all border border-slate-200 dark:border-white/5">
                                   <UserCheck size={16} />
                                 </button>
-                                <button className="p-2 bg-slate-900 rounded-lg text-slate-500 hover:text-brand-danger hover:bg-brand-danger/10 transition-all">
+                                <button className="p-2 bg-slate-100 dark:bg-slate-900 rounded-lg text-slate-500 hover:text-brand-danger hover:bg-brand-danger/10 transition-all border border-slate-200 dark:border-white/5">
                                   <Ban size={16} />
                                 </button>
-                                <button className="p-2 text-slate-600 hover:text-white transition-colors">
+                                <button className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                                   <MoreVertical size={16} />
                                 </button>
                               </div>
@@ -226,18 +226,19 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   {[1, 2, 3].map(i => (
                     <div key={i} className="flex gap-3 group cursor-pointer">
-                      <div className="w-8 h-8 rounded-lg bg-slate-900 border border-white/5 flex items-center justify-center text-slate-500">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 shadow-sm">
                         <MapPin size={16} />
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex justify-between items-start">
-                          <p className="text-[10px] font-black text-slate-300">New Check-in</p>
-                          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">2m ago</span>
+                          <p className="text-[10px] font-black text-slate-600 dark:text-slate-300">New Check-in</p>
+                          <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">2m ago</span>
                         </div>
-                        <p className="text-[10px] text-slate-500 line-clamp-1"><span className="text-white">Aryan Shah</span> checked into <span className="text-brand-primary">Main Library</span></p>
+                        <p className="text-[10px] text-slate-500 line-clamp-1"><span className="text-slate-900 dark:text-white font-bold">Aryan Shah</span> checked into <span className="text-brand-primary">Main Library</span></p>
                       </div>
                     </div>
                   ))}
+                </div>
                 </div>
 
                 <button className="w-full py-3 bg-slate-900/50 hover:bg-slate-900 border border-white/5 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all">
