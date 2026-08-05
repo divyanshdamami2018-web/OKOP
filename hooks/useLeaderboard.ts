@@ -28,6 +28,7 @@ export function useLeaderboard() {
           interests: p.interests || [],
           skills: p.skills || [],
           status: p.status || 'offline',
+          role: p.role || 'student',
           xp_points: p.xp_points || 0,
           daily_streak: p.daily_streak || 0,
           is_ghost_mode: p.is_ghost_mode || false,

@@ -39,6 +39,7 @@ export function useActivities() {
           college: item.college || 'Stanford University',
           interests: [],
           skills: [],
+          role: 'student',
           xp_points: 0,
           daily_streak: 0,
           is_ghost_mode: false,

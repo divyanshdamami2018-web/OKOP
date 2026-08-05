@@ -40,6 +40,7 @@ export function useFriendSystem() {
       skills: f.friend.skills || [],
       xp_points: f.friend.xp_points || 0,
       status: f.friend.status,
+      role: f.friend.role || 'student',
       daily_streak: f.friend.daily_streak || 0,
       is_ghost_mode: f.friend.is_ghost_mode || false,
       onboarding_completed: true,
