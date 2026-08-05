@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { SidebarNav } from '@/components/SidebarNav';
 import { ConversationList } from '@/components/messages/ConversationList';
-import { MessageItem } from '@/components/messages/MessageItem';
+import MessageItem from '@/components/messages/MessageItem';
 import {
   Send,
   Phone,
@@ -59,13 +59,19 @@ function MessagesContent() {
         setResolving(true);
         try {
           // Use atomic function to get or create DM
-          const { data: convId, error: rpcErr } = await supabase
+          let convId = null;
+          const { data: rpcData, error: rpcErr } = await supabase
             .rpc('create_dm_conversation', {
               user1_id: currentUser.id,
               user2_id: userIdParam
             });
 
-          if (rpcErr) throw rpcErr;
+          if (rpcErr || !rpcData) {
+            console.warn('RPC create_dm_conversation failed, falling back to JS implementation', rpcErr);
+            convId = await chatService.createDM(currentUser.id, userIdParam);
+          } else {
+            convId = rpcData;
+          }
 
           if (convId) {
             setActiveConversationId(convId);
@@ -162,11 +168,11 @@ function MessagesContent() {
                       className="relative"
                     >
                       <img
-                        src={otherParticipant.avatar}
-                        alt={otherParticipant.name}
+                        src={otherParticipant.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${resolvedConvo?.id}`}
+                        alt={otherParticipant.name || 'User'}
                         className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-100 dark:ring-slate-800 shadow-xl"
                       />
-                      {isOnline(otherParticipant.id) && (
+                      {otherParticipant.id && isOnline(otherParticipant.id) && (
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-brand-success border-4 border-white dark:border-slate-950 rounded-full shadow-lg" />
                       )}
                     </motion.div>
@@ -181,7 +187,7 @@ function MessagesContent() {
                       {resolvedConvo?.is_group && <span className="bg-brand-primary/20 text-brand-primary text-[10px] px-2 py-0.5 rounded-md uppercase font-black">Group</span>}
                     </h2>
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                      {otherParticipant && isOnline(otherParticipant.id) ? (
+                      {otherParticipant?.id && isOnline(otherParticipant.id) ? (
                         <>
                           <span className="w-1.5 h-1.5 bg-brand-success rounded-full animate-pulse" />
                           Active now

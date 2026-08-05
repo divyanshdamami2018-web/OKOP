@@ -18,45 +18,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORIES = ['All', 'Electronics', 'Wallets/IDs', 'Keys', 'Books', 'Other'];
-
-const ITEMS = [
-  {
-    id: '1',
-    title: 'Silver Apple Watch SE',
-    desc: 'Found near the Sports Ground benches. It has a blue sport band.',
-    location: 'Sports Ground',
-    time: '20 mins ago',
-    type: 'found',
-    category: 'Electronics',
-    image: 'https://images.unsplash.com/photo-1544117519-31a4b719223d?q=80&w=400&h=300&auto=format&fit=crop',
-    reporter: { name: 'Aryan', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aryan' }
-  },
-  {
-    id: '2',
-    title: 'Blue Nike Backpack',
-    desc: 'Lost my bag containing a laptop charger and some notebooks. Probably left it in the Library.',
-    location: 'Main Library',
-    time: '2 hours ago',
-    type: 'lost',
-    category: 'Other',
-    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=400&h=300&auto=format&fit=crop',
-    reporter: { name: 'Sneha', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha' }
-  },
-  {
-    id: '3',
-    title: 'Student ID Card',
-    desc: 'Found an ID card for Rahul Sharma (Year 3). Left it at the reception desk.',
-    location: 'Student Union',
-    time: 'Yesterday',
-    type: 'found',
-    category: 'Wallets/IDs',
-    reporter: { name: 'John', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John' }
-  }
-];
+import { useLostFound } from '@/hooks/useLostFound';
 
 export default function LostFoundPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'lost' | 'found'>('all');
   const [category, setCategory] = useState('All');
+  const { items, loading } = useLostFound();
 
   return (
     <div className="max-w-7xl mx-auto px-6 space-y-10 pb-20">
@@ -137,9 +104,14 @@ export default function LostFoundPage() {
 
         {/* Items Grid */}
         <div className="lg:col-span-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <AnimatePresence mode="popLayout">
-              {ITEMS.filter(item =>
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-danger"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <AnimatePresence mode="popLayout">
+                {items.filter(item =>
                 (activeTab === 'all' || item.type === activeTab) &&
                 (category === 'All' || item.category === category)
               ).map((item) => (
@@ -203,22 +175,23 @@ export default function LostFoundPage() {
                   </div>
                 </motion.div>
               ))}
-            </AnimatePresence>
+              </AnimatePresence>
 
-            {/* Post CTA */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              className="group rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-4 hover:border-brand-danger/50 hover:bg-brand-danger/5 transition-all relative overflow-hidden min-h-[300px]"
-            >
-              <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-400 group-hover:text-brand-danger group-hover:border-brand-danger/50 transition-all shadow-xl">
-                <Camera size={32} />
-              </div>
-              <div className="text-center px-8">
-                <p className="font-black text-slate-900 dark:text-white uppercase tracking-widest text-sm">Post Something</p>
-                <p className="text-xs text-slate-500 mt-2 font-medium">Lost your wallet? Found some keys? Let the campus know.</p>
-              </div>
-            </motion.button>
-          </div>
+              {/* Post CTA */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                className="group rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-4 hover:border-brand-danger/50 hover:bg-brand-danger/5 transition-all relative overflow-hidden min-h-[300px]"
+              >
+                <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-400 group-hover:text-brand-danger group-hover:border-brand-danger/50 transition-all shadow-xl">
+                  <Camera size={32} />
+                </div>
+                <div className="text-center px-8">
+                  <p className="font-black text-slate-900 dark:text-white uppercase tracking-widest text-sm">Post Something</p>
+                  <p className="text-xs text-slate-500 mt-2 font-medium">Lost your wallet? Found some keys? Let the campus know.</p>
+                </div>
+              </motion.button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth.store';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 export function useTypingIndicator(conversationId: string | null) {
   const { profile } = useAuthStore();
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  // Store the channel in a ref so setTyping can access the exact same channel instance
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!conversationId || !profile) return;
@@ -20,6 +23,8 @@ export function useTypingIndicator(conversationId: string | null) {
         },
       },
     });
+
+    channelRef.current = channel;
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -40,14 +45,15 @@ export function useTypingIndicator(conversationId: string | null) {
       });
 
     return () => {
+      channelRef.current = null;
       supabase.removeChannel(channel);
     };
   }, [conversationId, profile]);
 
   const setTyping = async (typing: boolean) => {
-    const channel = supabase.channel(`typing_${conversationId}`);
-    if (channel) {
-      await channel.track({ isTyping: typing });
+    // Use the ref to track on the correct channel instance
+    if (channelRef.current) {
+      await channelRef.current.track({ isTyping: typing });
     }
     setIsTyping(typing);
   };

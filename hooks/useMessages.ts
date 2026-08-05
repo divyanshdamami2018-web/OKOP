@@ -85,7 +85,9 @@ export function useChat(conversationId: string | null) {
       }, (payload: any) => {
         const msg = payload.new;
         setMessages(prev => {
-          // Prevent duplicates if optimistic update already finished
+          // Skip own messages — already handled by the optimistic update
+          if (msg.sender_id === profile?.id) return prev;
+          // Prevent duplicates from any other source
           if (prev.some(m => m.id === msg.id)) return prev;
 
           return [...prev, {

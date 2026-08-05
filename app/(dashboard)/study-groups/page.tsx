@@ -14,51 +14,15 @@ import {
   FileText,
   Sparkles,
   Zap,
+  CheckCircle2,
   GraduationCap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const GROUPS = [
-  {
-    id: '1',
-    title: 'Advanced AI Midterm Prep',
-    subject: 'Artificial Intelligence',
-    members: 4,
-    maxMembers: 6,
-    location: 'Main Library - Room 204',
-    time: 'Starting in 45m',
-    department: 'AI',
-    tags: ['ExamPrep', 'Python'],
-    creator: { name: 'Sarah', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' }
-  },
-  {
-    id: '2',
-    title: 'DSA Problem Solving',
-    subject: 'Data Structures',
-    members: 2,
-    maxMembers: 4,
-    location: 'Cafeteria Hub',
-    time: 'Tomorrow, 10:00 AM',
-    department: 'CS',
-    tags: ['LeetCode', 'Interview'],
-    creator: { name: 'Divyanshu', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Divyanshu' }
-  },
-  {
-    id: '3',
-    title: 'Design Systems Workshop',
-    subject: 'UI/UX Design',
-    members: 8,
-    maxMembers: 10,
-    location: 'Design Studio B',
-    time: 'Live Now',
-    department: 'Design',
-    tags: ['Figma', 'Prototyping'],
-    creator: { name: 'Alex', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' }
-  }
-];
+import { useStudyGroups } from '@/hooks/useStudyGroups';
 
 export default function StudyGroupsPage() {
   const [filter, setFilter] = useState('All');
+  const { groups, loading, joinGroup } = useStudyGroups();
 
   return (
     <div className="max-w-7xl mx-auto px-6 space-y-10 pb-20">
@@ -164,8 +128,13 @@ export default function StudyGroupsPage() {
 
         {/* Groups Grid */}
         <div className="lg:col-span-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {GROUPS.map((group) => (
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-secondary"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {groups.map((group) => (
               <motion.div
                 key={group.id}
                 whileHover={{ y: -8 }}
@@ -218,8 +187,16 @@ export default function StudyGroupsPage() {
                         {group.members}/{group.maxMembers} Joined
                       </span>
                     </div>
-                    <button className="p-3 bg-brand-secondary text-white rounded-2xl shadow-xl shadow-brand-secondary/20 hover:scale-110 transition-all active:scale-90">
-                      <ChevronRight size={20} strokeWidth={3} />
+                    <button 
+                      onClick={() => !group.hasJoined && joinGroup(group.id)}
+                      disabled={group.hasJoined}
+                      className={`p-3 rounded-2xl shadow-xl transition-all ${
+                        group.hasJoined 
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
+                          : 'bg-brand-secondary text-white shadow-brand-secondary/20 hover:scale-110 active:scale-90'
+                      }`}
+                    >
+                      {group.hasJoined ? <CheckCircle2 size={20} strokeWidth={3} /> : <ChevronRight size={20} strokeWidth={3} />}
                     </button>
                   </div>
                 </div>
@@ -237,6 +214,7 @@ export default function StudyGroupsPage() {
               </div>
             </button>
           </div>
+          )}
         </div>
       </div>
     </div>

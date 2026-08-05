@@ -13,7 +13,9 @@ import {
   MapPin,
   MessageCircle,
   MoreVertical,
-  Loader2
+  Loader2,
+  Bell,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePeople } from '@/hooks/usePeople';
@@ -199,5 +201,3 @@ export default function PeoplePage() {
     </div>
   );
 }
-
-import { Bell, X } from 'lucide-react';

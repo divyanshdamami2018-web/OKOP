@@ -19,51 +19,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORIES = ['All', 'Books', 'Electronics', 'Bicycles', 'Furniture', 'Hostel Items'];
 
-const ITEMS = [
-  {
-    id: '1',
-    title: 'Modern Coding with Next.js (Hardcover)',
-    price: 25,
-    category: 'Books',
-    location: 'Old Union',
-    posted: '1h ago',
-    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&h=300&auto=format&fit=crop',
-    seller: { name: 'Alex', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' }
-  },
-  {
-    id: '2',
-    title: 'Electric Scooter - Lightly Used',
-    price: 350,
-    category: 'Bicycles',
-    location: 'Main Quad',
-    posted: '3h ago',
-    image: 'https://images.unsplash.com/photo-1597075095353-83f063765f7c?q=80&w=400&h=300&auto=format&fit=crop',
-    seller: { name: 'Sarah', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' }
-  },
-  {
-    id: '3',
-    title: 'Mechanical Keyboard (RGB)',
-    price: 45,
-    category: 'Electronics',
-    location: 'Lab 4',
-    posted: '5h ago',
-    image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?q=80&w=400&h=300&auto=format&fit=crop',
-    seller: { name: 'James', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=James' }
-  },
-  {
-    id: '4',
-    title: 'Study Table & Chair Set',
-    price: 80,
-    category: 'Furniture',
-    location: 'Hostel A',
-    posted: '1d ago',
-    image: 'https://images.unsplash.com/photo-1518455027359-f3f816b1a22a?q=80&w=400&h=300&auto=format&fit=crop',
-    seller: { name: 'Emma', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma' }
-  }
-];
+import { useMarketplace } from '@/hooks/useMarketplace';
 
 export default function MarketplacePage() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const { items, loading } = useMarketplace();
 
   return (
     <div className="max-w-7xl mx-auto px-6 space-y-10 pb-20">
@@ -110,9 +70,14 @@ export default function MarketplacePage() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        <AnimatePresence mode="popLayout">
-          {ITEMS.filter(item => activeCategory === 'All' || item.category === activeCategory).map((item) => (
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <AnimatePresence mode="popLayout">
+            {items.filter(item => activeCategory === 'All' || item.category === activeCategory).map((item) => (
             <motion.div
               layout
               initial={{ opacity: 0, scale: 0.9 }}
@@ -180,7 +145,8 @@ export default function MarketplacePage() {
             +15 XP per listing
           </div>
         </motion.button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

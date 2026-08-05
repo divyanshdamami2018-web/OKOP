@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Message, UserProfile } from '@/types';
 
 interface MessageItemProps {
@@ -9,32 +10,53 @@ interface MessageItemProps {
   sender?: UserProfile;
 }
 
-export const MessageItem: React.FC<MessageItemProps> = ({ message, isMe, sender }) => {
+export default function MessageItem({
+  message,
+  isMe,
+  sender,
+}: MessageItemProps) {
   return (
-    <div className={`flex w-full mb-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex max-w-[70%] ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-2`}>
+    <div className={`flex mb-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`flex items-end gap-2 max-w-[75%] ${
+          isMe ? 'flex-row-reverse' : ''
+        }`}
+      >
         {!isMe && sender && (
-          <img
-            src={sender.avatar}
+          <Image
+            src={sender.avatar || '/default-avatar.png'}
             alt={sender.name}
-            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm"
+            width={32}
+            height={32}
+            className="rounded-full border border-slate-200 dark:border-slate-700 object-cover"
           />
         )}
+
         <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+          {!isMe && sender && (
+            <span className="text-xs text-slate-500 mb-1 font-medium">
+              {sender.name}
+            </span>
+          )}
+
           <div
-            className={`px-4 py-2.5 rounded-2xl text-sm ${
+            className={`px-4 py-3 rounded-2xl break-words whitespace-pre-wrap text-sm leading-relaxed transition-all ${
               isMe
-                ? 'bg-brand-primary text-white rounded-br-none shadow-lg shadow-brand-primary/10'
-                : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-none border border-slate-200 dark:border-slate-700/50 shadow-sm'
+                ? 'bg-brand-primary text-white rounded-br-md shadow-lg shadow-brand-primary/20'
+                : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md border border-slate-200 dark:border-slate-700 shadow'
             }`}
           >
             {message.text}
           </div>
-          <span className="text-[10px] text-slate-500 mt-1 font-medium px-1 uppercase tracking-tighter">
-            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+
+          <span className="mt-1 px-1 text-[11px] text-slate-500">
+            {new Date(message.timestamp).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </span>
         </div>
       </div>
     </div>
   );
-};
+}

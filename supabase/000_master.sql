@@ -1,5 +1,5 @@
--- OKOP'S ULTIMATE MASTER SCHEMA
--- This file consolidates all previous schemas, enforces rigorous RLS, adds performance indexes, and prevents race conditions.
+-- OKOP'S PRODUCTION-READY MASTER SCHEMA
+-- Optimized for Supabase with Race-Condition Prevention and Hardened Security
 
 -- ==========================================
 -- 1. EXTENSIONS & UTILITIES
@@ -17,7 +17,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ==========================================
--- 2. CORE TABLES
+-- 2. CORE TABLES (ORDERED BY DEPENDENCY)
 -- ==========================================
 
 -- PROFILES
@@ -48,6 +48,34 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- MESSAGING (Moved before events to resolve FK reference)
+CREATE TABLE IF NOT EXISTS conversations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    is_group BOOLEAN DEFAULT FALSE,
+    name TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS conversation_participants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    last_read_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(conversation_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+    sender_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    content TEXT,
+    file_url TEXT,
+    is_edited BOOLEAN DEFAULT FALSE,
+    delivered_at TIMESTAMPTZ,
+    read_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- FRIENDS
 CREATE TABLE IF NOT EXISTS friend_requests (
@@ -90,7 +118,7 @@ CREATE TABLE IF NOT EXISTS community_members (
     PRIMARY KEY (community_id, user_id)
 );
 
--- EVENTS (Replaces Activities)
+-- EVENTS
 CREATE TABLE IF NOT EXISTS events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     creator_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -158,34 +186,7 @@ CREATE TABLE IF NOT EXISTS meet_spot_checkins (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- MESSAGING
-CREATE TABLE IF NOT EXISTS conversations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    is_group BOOLEAN DEFAULT FALSE,
-    name TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS conversation_participants (
-    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    last_read_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY(conversation_id, user_id)
-);
-
-CREATE TABLE IF NOT EXISTS messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
-    sender_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
-    content TEXT,
-    file_url TEXT,
-    is_edited BOOLEAN DEFAULT FALSE,
-    delivered_at TIMESTAMPTZ,
-    read_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- SOCIAL (New)
+-- SOCIAL
 CREATE TABLE IF NOT EXISTS follows (
     follower_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
     following_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -228,6 +229,45 @@ CREATE TABLE IF NOT EXISTS post_bookmarks (
     PRIMARY KEY (post_id, user_id)
 );
 
+-- MARKETPLACE & PLACEMENTS
+CREATE TABLE IF NOT EXISTS placement_listings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    description TEXT,
+    location TEXT,
+    package_info TEXT,
+    deadline TIMESTAMPTZ,
+    apply_url TEXT,
+    category TEXT CHECK (category IN ('internship', 'full-time')),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS marketplace_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    description TEXT,
+    price DOUBLE PRECISION,
+    category TEXT,
+    location TEXT,
+    image_url TEXT,
+    seller_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    is_sold BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS lost_found (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    description TEXT,
+    type TEXT CHECK (type IN ('lost', 'found')),
+    location TEXT,
+    image_url TEXT,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    is_resolved BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- NOTIFICATIONS & TOKENS
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -265,76 +305,66 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 );
 
 -- ==========================================
--- 3. AUTOMATION & TRIGGERS
+-- 3. AUTOMATION & ATOMIC STORED PROCEDURES
 -- ==========================================
 
--- Auto-Profile
+-- Auto-Profile Handler
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, avatar_url, username)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'full_name',
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'New Student'),
     'https://api.dicebear.com/7.x/avataaars/svg?seed=' || NEW.id,
     'student_' || substring(NEW.id::text, 1, 8)
-  );
+  ) ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Atomic Rate Limiter (Race-Condition Free)
-CREATE OR REPLACE FUNCTION check_rate_limit(rl_key TEXT, max_reqs INTEGER, window_interval INTERVAL)
-RETURNS boolean AS $$
+-- Atomic Friend Request Accept Procedure
+CREATE OR REPLACE FUNCTION accept_friend_request(req_id UUID)
+RETURNS VOID AS $$
 DECLARE
-  is_allowed BOOLEAN;
+    v_sender_id UUID;
+    v_receiver_id UUID;
 BEGIN
-  INSERT INTO public.rate_limits (key, request_count, last_request)
-  VALUES (rl_key, 1, NOW())
-  ON CONFLICT (key) DO UPDATE
-  SET 
-    request_count = CASE 
-      WHEN rate_limits.last_request < NOW() - window_interval THEN 1 
-      ELSE rate_limits.request_count + 1 
-    END,
-    last_request = NOW()
-  RETURNING (request_count <= max_reqs) INTO is_allowed;
-  
-  RETURN is_allowed;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+    SELECT sender_id, receiver_id INTO v_sender_id, v_receiver_id
+    FROM friend_requests
+    WHERE id = req_id AND receiver_id = auth.uid() AND status = 'pending';
 
--- Chat Helpers
-CREATE OR REPLACE FUNCTION get_conversation_between_users(user1 UUID, user2 UUID)
-RETURNS TABLE (id UUID) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT cp1.conversation_id
-  FROM conversation_participants cp1
-  JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
-  WHERE cp1.user_id = user1 AND cp2.user_id = user2
-  AND EXISTS (
-    SELECT 1 FROM conversations c
-    WHERE c.id = cp1.conversation_id AND c.is_group = FALSE
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Friend request not found or unauthorized.';
+    END IF;
 
--- Create DM Function (Atomic)
+    -- Update Request Status
+    UPDATE friend_requests SET status = 'accepted' WHERE id = req_id;
+
+    -- Insert Symmetric Friendship
+    INSERT INTO friends (user_id, friend_id) VALUES (v_sender_id, v_receiver_id) ON CONFLICT DO NOTHING;
+    INSERT INTO friends (user_id, friend_id) VALUES (v_receiver_id, v_sender_id) ON CONFLICT DO NOTHING;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Atomic Direct Message Creator
+-- Atomic Direct Message Creator
 CREATE OR REPLACE FUNCTION create_dm_conversation(user1_id UUID, user2_id UUID)
 RETURNS UUID AS $$
 DECLARE
     new_conv_id UUID;
 BEGIN
-    -- Check for existing DM first
-    SELECT conversation_id INTO new_conv_id
+    -- Check for existing DM
+    SELECT cp1.conversation_id INTO new_conv_id
     FROM conversation_participants cp1
     JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
-    WHERE cp1.user_id = user1_id AND cp2.user_id = user2_id
-    AND EXISTS (SELECT 1 FROM conversations WHERE id = cp1.conversation_id AND is_group = FALSE)
+    JOIN conversations c ON c.id = cp1.conversation_id
+    WHERE cp1.user_id = user1_id
+      AND cp2.user_id = user2_id
+      AND c.is_group = FALSE
     LIMIT 1;
 
     IF new_conv_id IS NOT NULL THEN
@@ -350,17 +380,9 @@ BEGIN
 
     RETURN new_conv_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- XP Rewards (Atomic)
-CREATE OR REPLACE FUNCTION award_xp(target_user_id UUID, amount INTEGER)
-RETURNS void AS $$
-BEGIN
-  UPDATE public.profiles SET xp_points = xp_points + amount WHERE id = target_user_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- SOCIAL GRAPH AUTO-COUNTS
+-- Social Graph Count Automation
 CREATE OR REPLACE FUNCTION update_social_counts()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -375,235 +397,163 @@ BEGIN
         END IF;
     ELSIF (TG_OP = 'DELETE') THEN
         IF (TG_TABLE_NAME = 'follows') THEN
-            UPDATE profiles SET follower_count = follower_count - 1 WHERE id = OLD.following_id;
-            UPDATE profiles SET following_count = following_count - 1 WHERE id = OLD.follower_id;
+            UPDATE profiles SET follower_count = GREATEST(0, follower_count - 1) WHERE id = OLD.following_id;
+            UPDATE profiles SET following_count = GREATEST(0, following_count - 1) WHERE id = OLD.follower_id;
         ELSIF (TG_TABLE_NAME = 'posts') THEN
-            UPDATE profiles SET post_count = post_count - 1 WHERE id = OLD.author_id;
+            UPDATE profiles SET post_count = GREATEST(0, post_count - 1) WHERE id = OLD.author_id;
         ELSIF (TG_TABLE_NAME = 'community_members') THEN
-            UPDATE communities SET member_count = member_count - 1 WHERE id = OLD.community_id;
+            UPDATE communities SET member_count = GREATEST(0, member_count - 1) WHERE id = OLD.community_id;
         END IF;
     END IF;
     RETURN NULL;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS on_follow_change ON follows;
 CREATE TRIGGER on_follow_change AFTER INSERT OR DELETE ON follows FOR EACH ROW EXECUTE FUNCTION update_social_counts();
-CREATE TRIGGER on_post_change AFTER INSERT OR DELETE ON posts FOR EACH ROW EXECUTE FUNCTION update_social_counts();
-CREATE TRIGGER on_community_member_change AFTER INSERT OR DELETE ON community_members FOR EACH ROW EXECUTE FUNCTION update_social_counts();
 
--- Event Feed View (For backward compatibility with UI)
-CREATE OR REPLACE VIEW activity_feed AS
-SELECT
-  e.id,
-  e.creator_id,
-  p.full_name as creator_name,
-  p.avatar_url as creator_avatar,
-  p.username as creator_username,
-  p.college,
-  e.title,
-  e.description,
-  e.category,
-  e.location,
-  e.start_time,
-  e.max_participants,
-  e.tags,
-  (SELECT count(*)::int FROM event_registrations er WHERE er.event_id = e.id) as current_count
-FROM events e
-JOIN profiles p ON e.creator_id = p.id;
+DROP TRIGGER IF EXISTS on_post_change ON posts;
+CREATE TRIGGER on_post_change AFTER INSERT OR DELETE ON posts FOR EACH ROW EXECUTE FUNCTION update_social_counts();
+
+DROP TRIGGER IF EXISTS on_community_member_change ON community_members;
+CREATE TRIGGER on_community_member_change AFTER INSERT OR DELETE ON community_members FOR EACH ROW EXECUTE FUNCTION update_social_counts();
 
 -- ==========================================
 -- 4. ROW LEVEL SECURITY (RLS)
 -- ==========================================
 
--- PROFILES
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
-CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Admins can update any profile" ON profiles FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-);
-CREATE POLICY "Admins can delete any profile" ON profiles FOR DELETE USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-);
+CREATE POLICY "Profiles viewable by everyone" ON profiles FOR SELECT USING (true);
+CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
--- FRIENDS
 ALTER TABLE friend_requests ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can see own requests" ON friend_requests FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
-CREATE POLICY "Users can send requests" ON friend_requests FOR INSERT WITH CHECK (auth.uid() = sender_id);
-CREATE POLICY "Users can accept/reject received requests" ON friend_requests FOR UPDATE USING (auth.uid() = receiver_id);
+CREATE POLICY "View own friend requests" ON friend_requests FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+CREATE POLICY "Send friend requests" ON friend_requests FOR INSERT WITH CHECK (auth.uid() = sender_id);
+CREATE POLICY "Update received friend requests" ON friend_requests FOR UPDATE USING (auth.uid() = receiver_id);
 
 ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Friends viewable by everyone" ON friends FOR SELECT USING (true);
 
--- COMMUNITIES
 ALTER TABLE communities ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Communities viewable by everyone" ON communities FOR SELECT USING (true);
-CREATE POLICY "Users can create communities" ON communities FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Admins update communities" ON communities FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM community_members WHERE community_id = communities.id AND user_id = auth.uid() AND role IN ('admin', 'moderator'))
-);
+CREATE POLICY "Authenticated users create communities" ON communities FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Creators update communities" ON communities FOR UPDATE USING (auth.uid() = creator_id);
 
 ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Members viewable by everyone" ON community_members FOR SELECT USING (true);
-CREATE POLICY "Users can join/add members" ON community_members FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Admins can update members" ON community_members FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM community_members WHERE community_id = community_members.community_id AND user_id = auth.uid() AND role = 'admin')
-);
+CREATE POLICY "Users join communities" ON community_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users leave communities" ON community_members FOR DELETE USING (auth.uid() = user_id);
 
--- EVENTS
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Events viewable by everyone" ON events FOR SELECT USING (true);
-CREATE POLICY "Users can create events" ON events FOR INSERT WITH CHECK (auth.uid() = creator_id);
-CREATE POLICY "Creators can update events" ON events FOR UPDATE USING (auth.uid() = creator_id);
+CREATE POLICY "Users create events" ON events FOR INSERT WITH CHECK (auth.uid() = creator_id);
+CREATE POLICY "Creators update events" ON events FOR UPDATE USING (auth.uid() = creator_id);
 
 ALTER TABLE event_registrations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Registrations viewable by everyone" ON event_registrations FOR SELECT USING (true);
-CREATE POLICY "Users can register themselves" ON event_registrations FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can unregister themselves" ON event_registrations FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users register for events" ON event_registrations FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users cancel registration" ON event_registrations FOR DELETE USING (auth.uid() = user_id);
 
--- MOMENTS
 ALTER TABLE moments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Moments viewable until expired" ON moments FOR SELECT USING (expires_at > NOW());
-CREATE POLICY "Users can post moments" ON moments FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can delete own moments" ON moments FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "View unexpired moments" ON moments FOR SELECT USING (expires_at > NOW());
+CREATE POLICY "Post moments" ON moments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Delete own moments" ON moments FOR DELETE USING (auth.uid() = user_id);
 
--- NOTES
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "conversations_select" ON conversations FOR SELECT USING (
+  id IN (SELECT conversation_id FROM conversation_participants WHERE user_id = auth.uid())
+);
+CREATE POLICY "conversations_insert" ON conversations FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "participants_select" ON conversation_participants FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "participants_insert" ON conversation_participants FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "participants_delete" ON conversation_participants FOR DELETE USING (user_id = auth.uid());
+
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "messages_select" ON messages FOR SELECT USING (
+  conversation_id IN (SELECT conversation_id FROM conversation_participants WHERE user_id = auth.uid())
+);
+CREATE POLICY "messages_insert" ON messages FOR INSERT WITH CHECK (
+  auth.uid() = sender_id AND
+  conversation_id IN (SELECT conversation_id FROM conversation_participants WHERE user_id = auth.uid())
+);
+
+ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Follows viewable by everyone" ON follows FOR SELECT USING (true);
+CREATE POLICY "Users follow others" ON follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
+CREATE POLICY "Users unfollow others" ON follows FOR DELETE USING (auth.uid() = follower_id);
+
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Posts viewable by everyone" ON posts FOR SELECT USING (true);
+CREATE POLICY "Users create posts" ON posts FOR INSERT WITH CHECK (auth.uid() = author_id);
+CREATE POLICY "Authors update posts" ON posts FOR UPDATE USING (auth.uid() = author_id);
+CREATE POLICY "Authors delete posts" ON posts FOR DELETE USING (auth.uid() = author_id);
+
+ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Likes viewable by everyone" ON post_likes FOR SELECT USING (true);
+CREATE POLICY "Users like posts" ON post_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users unlike posts" ON post_likes FOR DELETE USING (auth.uid() = user_id);
+
+ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Comments viewable by everyone" ON post_comments FOR SELECT USING (true);
+CREATE POLICY "Users comment" ON post_comments FOR INSERT WITH CHECK (auth.uid() = author_id);
+CREATE POLICY "Authors delete comments" ON post_comments FOR DELETE USING (auth.uid() = author_id);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "notifications_select" ON notifications FOR SELECT USING (auth.uid() = receiver_id);
+CREATE POLICY "notifications_insert" ON notifications FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "notifications_update" ON notifications FOR UPDATE USING (auth.uid() = receiver_id);
+
+ALTER TABLE user_device_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "View own tokens" ON user_device_tokens FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Insert own tokens" ON user_device_tokens FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Delete own tokens" ON user_device_tokens FOR DELETE USING (auth.uid() = user_id);
+
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Notes viewable by everyone" ON notes FOR SELECT USING (true);
-CREATE POLICY "Users can upload notes" ON notes FOR INSERT WITH CHECK (auth.uid() = uploader_id);
+CREATE POLICY "Users upload notes" ON notes FOR INSERT WITH CHECK (auth.uid() = uploader_id);
 
--- PLACEMENT
-CREATE TABLE IF NOT EXISTS placement_listings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    company_name TEXT NOT NULL,
-    role TEXT NOT NULL,
-    description TEXT,
-    location TEXT,
-    package_info TEXT,
-    deadline TIMESTAMPTZ,
-    apply_url TEXT,
-    category TEXT CHECK (category IN ('internship', 'full-time')),
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
 ALTER TABLE placement_listings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Placement viewable by everyone" ON placement_listings FOR SELECT USING (true);
+CREATE POLICY "Placements viewable by everyone" ON placement_listings FOR SELECT USING (true);
 
--- LOST & FOUND
-CREATE TABLE IF NOT EXISTS lost_found (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title TEXT NOT NULL,
-    description TEXT,
-    type TEXT CHECK (type IN ('lost', 'found')),
-    location TEXT,
-    image_url TEXT,
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    is_resolved BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+ALTER TABLE marketplace_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Marketplace viewable by everyone" ON marketplace_items FOR SELECT USING (true);
+CREATE POLICY "Users post marketplace items" ON marketplace_items FOR INSERT WITH CHECK (auth.uid() = seller_id);
+CREATE POLICY "Sellers update items" ON marketplace_items FOR UPDATE USING (auth.uid() = seller_id);
+CREATE POLICY "Sellers delete items" ON marketplace_items FOR DELETE USING (auth.uid() = seller_id);
+
 ALTER TABLE lost_found ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Lost & Found viewable by everyone" ON lost_found FOR SELECT USING (true);
-CREATE POLICY "Users can report items" ON lost_found FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Owners can resolve" ON lost_found FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users post lost/found" ON lost_found FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Owners update lost/found" ON lost_found FOR UPDATE USING (auth.uid() = user_id);
 
--- MEET SPOTS
 ALTER TABLE meet_spots ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Meet spots viewable by everyone" ON meet_spots FOR SELECT USING (true);
 
 ALTER TABLE meet_spot_checkins ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Checkins viewable by everyone" ON meet_spot_checkins FOR SELECT USING (true);
-CREATE POLICY "Users can check themselves in" ON meet_spot_checkins FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their checkins" ON meet_spot_checkins FOR UPDATE USING (auth.uid() = user_id);
-
--- MESSAGING RLS (NON-RECURSIVE)
-ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Conversations select policy" ON conversations FOR SELECT USING (
-  EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = id AND user_id = auth.uid())
-);
-CREATE POLICY "Conversations insert policy" ON conversations FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Participants select policy" ON conversation_participants FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Participants insert policy" ON conversation_participants FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Messages select policy" ON messages FOR SELECT USING (
-  EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = auth.uid())
-);
-CREATE POLICY "Messages insert policy" ON messages FOR INSERT WITH CHECK (
-  auth.uid() = sender_id AND
-  EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = auth.uid())
-);
-
--- SOCIAL (New)
-ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Follows viewable by everyone" ON follows FOR SELECT USING (true);
-CREATE POLICY "Users can follow others" ON follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
-CREATE POLICY "Users can unfollow" ON follows FOR DELETE USING (auth.uid() = follower_id);
-
-ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Posts viewable by everyone" ON posts FOR SELECT USING (true);
-CREATE POLICY "Users can create posts" ON posts FOR INSERT WITH CHECK (auth.uid() = author_id);
-CREATE POLICY "Authors can update own posts" ON posts FOR UPDATE USING (auth.uid() = author_id);
-CREATE POLICY "Authors can delete own posts" ON posts FOR DELETE USING (auth.uid() = author_id);
-
-ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Likes viewable by everyone" ON post_likes FOR SELECT USING (true);
-CREATE POLICY "Users can like posts" ON post_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can unlike posts" ON post_likes FOR DELETE USING (auth.uid() = user_id);
-
-ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Comments viewable by everyone" ON post_comments FOR SELECT USING (true);
-CREATE POLICY "Users can comment" ON post_comments FOR INSERT WITH CHECK (auth.uid() = author_id);
-CREATE POLICY "Authors can delete own comments" ON post_comments FOR DELETE USING (auth.uid() = author_id);
-
-ALTER TABLE post_bookmarks ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Bookmarks viewable by owner" ON post_bookmarks FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can bookmark" ON post_bookmarks FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can unbookmark" ON post_bookmarks FOR DELETE USING (auth.uid() = user_id);
-
--- NOTIFICATIONS & TOKENS
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Notifications select policy" ON notifications FOR SELECT USING (auth.uid() = receiver_id);
-CREATE POLICY "Notifications insert policy" ON notifications FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Notifications update policy" ON notifications FOR UPDATE USING (auth.uid() = receiver_id);
-
-ALTER TABLE user_device_tokens ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see own tokens" ON user_device_tokens FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can add own tokens" ON user_device_tokens FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users checkin" ON meet_spot_checkins FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- SYSTEM LOGS
 ALTER TABLE system_logs ENABLE ROW LEVEL SECURITY;
--- No public policies! Only Service Role / Admin can read/write logs.
--- Normal users cannot insert into system_logs to prevent log stuffing.
+-- Internal table: Service role read/write only.
 
 -- ==========================================
 -- 5. PERFORMANCE INDEXES
 -- ==========================================
 CREATE INDEX IF NOT EXISTS idx_moments_expires_at ON moments(expires_at);
 CREATE INDEX IF NOT EXISTS idx_moments_user_id ON moments(user_id);
-
 CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
-CREATE INDEX IF NOT EXISTS idx_events_creator_id ON events(creator_id);
-CREATE INDEX IF NOT EXISTS idx_event_registrations_event_id ON event_registrations(event_id);
-CREATE INDEX IF NOT EXISTS idx_event_registrations_user_id ON event_registrations(user_id);
-
-CREATE INDEX IF NOT EXISTS idx_meet_spot_checkins_spot_id ON meet_spot_checkins(spot_id);
-CREATE INDEX IF NOT EXISTS idx_meet_spot_checkins_expires_at ON meet_spot_checkins(expires_at);
-
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
-
 CREATE INDEX IF NOT EXISTS idx_notifications_receiver_id ON notifications(receiver_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
-
--- SOCIAL (New)
-CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
-CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
 CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
 CREATE INDEX IF NOT EXISTS idx_post_comments_post_id ON post_comments(post_id);
 
 -- REALTIME ENABLERS
+ALTER PUBLICATION supabase_realtime ADD TABLE marketplace_items;
 ALTER PUBLICATION supabase_realtime ADD TABLE events;
 ALTER PUBLICATION supabase_realtime ADD TABLE event_registrations;
 ALTER PUBLICATION supabase_realtime ADD TABLE moments;
@@ -614,3 +564,5 @@ ALTER PUBLICATION supabase_realtime ADD TABLE follows;
 ALTER PUBLICATION supabase_realtime ADD TABLE posts;
 ALTER PUBLICATION supabase_realtime ADD TABLE post_likes;
 ALTER PUBLICATION supabase_realtime ADD TABLE post_comments;
+ALTER PUBLICATION supabase_realtime ADD TABLE friend_requests;
+ALTER PUBLICATION supabase_realtime ADD TABLE friends;

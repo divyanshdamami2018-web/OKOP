@@ -17,10 +17,18 @@ export const chatService = {
             profiles (
               id,
               full_name,
+              username,
               avatar_url,
               status,
               role
             )
+          ),
+          messages (
+            id,
+            sender_id,
+            content,
+            created_at,
+            read_at
           )
         )
       `)
@@ -43,14 +51,28 @@ export const chatService = {
           role: p.profiles?.role || 'student'
         }));
 
+      // Get last message
+      const lastMsgData = conv.messages && conv.messages.length > 0
+        ? conv.messages.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+        : null;
+
+      const lastMessage: Message | undefined = lastMsgData ? {
+        id: lastMsgData.id,
+        senderId: lastMsgData.sender_id,
+        text: lastMsgData.content,
+        timestamp: lastMsgData.created_at,
+        isRead: !!lastMsgData.read_at
+      } : undefined;
+
       return {
         id: conv.id,
         is_group: conv.is_group,
         name: conv.name,
         participants: otherParticipants,
+        lastMessage,
         unreadCount: 0
-      } as any;
-    }).filter(Boolean);
+      } as Conversation;
+    }).filter(Boolean) as Conversation[];
   },
 
   async getMessages(conversationId: string, limit = 50, cursor?: string): Promise<Message[]> {
@@ -118,6 +140,7 @@ export const chatService = {
           profiles (
             id,
             full_name,
+            username,
             avatar_url,
             status,
             role
@@ -147,5 +170,38 @@ export const chatService = {
       participants: otherParticipants,
       unreadCount: 0
     } as any;
+  },
+
+  async createDM(user1Id: string, user2Id: string): Promise<string> {
+    // 1. Check existing
+    const { data: shared } = await supabase.rpc('get_conversation_between_users', {
+      user1: user1Id,
+      user2: user2Id
+    });
+
+    if (shared && shared.length > 0) {
+      return shared[0].id;
+    }
+
+    // 2. Create New
+    const { data: newConv, error: createErr } = await supabase
+      .from('conversations')
+      .insert({ is_group: false })
+      .select('id')
+      .single();
+
+    if (createErr) throw createErr;
+
+    // 3. Add Participants
+    const { error: partErr } = await supabase
+      .from('conversation_participants')
+      .insert([
+        { conversation_id: newConv.id, user_id: user1Id },
+        { conversation_id: newConv.id, user_id: user2Id }
+      ]);
+
+    if (partErr) throw partErr;
+
+    return newConv.id;
   }
 };
