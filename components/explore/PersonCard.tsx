@@ -6,12 +6,14 @@ import { UserPlus, UserMinus, MessageCircle, Loader2, Sparkles } from 'lucide-re
 import { UserProfile } from '@/types';
 import { useFollows } from '@/hooks/useFollows';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface PersonCardProps {
   person: UserProfile;
 }
 
 export const PersonCard: React.FC<PersonCardProps> = ({ person }) => {
+  const router = useRouter();
   const { isFollowing, follow, unfollow, loading } = useFollows(person.id);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -108,12 +110,15 @@ export const PersonCard: React.FC<PersonCardProps> = ({ person }) => {
           )}
         </button>
 
-        <Link
-          href={`/messages?id=${person.id}`}
-          className="p-3.5 bg-slate-950 border border-slate-800 text-slate-400 rounded-2xl hover:text-brand-primary hover:border-brand-primary/30 transition-all active:scale-95 shadow-lg"
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            router.push(`/messages?user=${person.id}`);
+          }}
+          className="p-3.5 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl hover:text-brand-primary hover:border-brand-primary/30 transition-all active:scale-95 shadow-lg"
         >
           <MessageCircle size={20} strokeWidth={2.5} />
-        </Link>
+        </button>
       </div>
     </motion.div>
   );

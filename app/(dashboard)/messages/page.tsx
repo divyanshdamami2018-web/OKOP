@@ -29,6 +29,7 @@ function MessagesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const conversationIdParam = searchParams.get('id');
+  const userIdParam = searchParams.get('user');
 
   const { profile: currentUser } = useAuthStore();
   const { conversations, loading: convsLoading } = useConversations();
@@ -40,12 +41,45 @@ function MessagesContent() {
   const [inputText, setInputText] = useState('');
 
   useEffect(() => {
-    if (conversationIdParam) {
-      setActiveConversationId(conversationIdParam);
-    } else if (conversations.length > 0 && !activeConversationId) {
-      setActiveConversationId(conversations[0].id);
+    async function resolveParams() {
+      if (conversationIdParam) {
+        setActiveConversationId(conversationIdParam);
+      } else if (userIdParam && currentUser) {
+        // Find or create conversation
+        try {
+          const { data: existing } = await supabase
+            .rpc('get_conversation_between_users', {
+              user1: currentUser.id,
+              user2: userIdParam
+            });
+
+          if (existing && existing.length > 0) {
+            setActiveConversationId(existing[0].id);
+          } else {
+            const { data: conv, error: convErr } = await supabase
+              .from('conversations')
+              .insert({ is_group: false })
+              .select()
+              .single();
+
+            if (convErr) throw convErr;
+
+            await supabase.from('conversation_participants').insert([
+              { conversation_id: conv.id, user_id: currentUser.id },
+              { conversation_id: conv.id, user_id: userIdParam }
+            ]);
+
+            setActiveConversationId(conv.id);
+          }
+        } catch (err) {
+          console.error('Error resolving user chat:', err);
+        }
+      } else if (conversations.length > 0 && !activeConversationId) {
+        setActiveConversationId(conversations[0].id);
+      }
     }
-  }, [conversations, activeConversationId, conversationIdParam]);
+    resolveParams();
+  }, [conversations, activeConversationId, conversationIdParam, userIdParam, currentUser]);
 
   const activeConv = conversations.find(c => c.id === activeConversationId);
   const otherParticipant = activeConv?.participants[0];

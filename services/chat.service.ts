@@ -30,15 +30,17 @@ export const chatService = {
 
     return (data || []).map((item: any) => {
       const conv = item.conversations;
-      const otherParticipants = conv.conversation_participants
+      if (!conv) return null;
+
+      const otherParticipants = (conv.conversation_participants || [])
         .filter((p: any) => p.user_id !== userId)
         .map((p: any) => ({
-          id: p.profiles.id,
-          name: p.profiles.full_name,
-          avatar: p.profiles.avatar_url,
-          username: p.profiles.username,
-          status: p.profiles.status,
-          role: p.profiles.role
+          id: p.profiles?.id,
+          name: p.profiles?.full_name || 'Campus User',
+          avatar: p.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`,
+          username: p.profiles?.username || 'user',
+          status: p.profiles?.status || 'offline',
+          role: p.profiles?.role || 'student'
         }));
 
       return {
@@ -46,9 +48,9 @@ export const chatService = {
         is_group: conv.is_group,
         name: conv.name,
         participants: otherParticipants,
-        unreadCount: 0 // Fetch separately or via a view
+        unreadCount: 0
       } as any;
-    });
+    }).filter(Boolean);
   },
 
   async getMessages(conversationId: string, limit = 50, cursor?: string): Promise<Message[]> {

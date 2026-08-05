@@ -7,21 +7,24 @@ import { useAuthStore } from '@/store/auth.store';
 import { supabase } from '@/lib/supabase';
 
 export function useConversations() {
-  const { profile } = useAuthStore();
+  const { profile, loading: authLoading } = useAuthStore();
   const { conversations, setConversations } = useChatStore();
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
-    if (!profile) return;
+    if (!profile) {
+      if (!authLoading) setLoading(false);
+      return;
+    }
     try {
       const data = await chatService.getConversations(profile.id);
       setConversations(data);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching conversations:', err);
     } finally {
       setLoading(false);
     }
-  }, [profile, setConversations]);
+  }, [profile, authLoading, setConversations]);
 
   useEffect(() => {
     fetch();

@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types';
 import { User } from '@supabase/supabase-js';
 
+import { useAuthStore } from '@/store/auth.store';
+
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
@@ -20,9 +22,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, profile, loading, setUser, setProfile, setLoading } = useAuthStore();
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -43,6 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: data.role || 'student',
         xp_points: data.xp_points || 0,
         daily_streak: data.daily_streak || 0,
+        follower_count: data.follower_count || 0,
+        following_count: data.following_count || 0,
+        post_count: data.post_count || 0,
         is_ghost_mode: data.is_ghost_mode || false,
         onboarding_completed: data.onboarding_completed || false,
         is_profile_public: data.is_profile_public ?? true,
@@ -56,11 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let cancelled = false;
-    let fetchedUserId: string | null = null;
 
     const loadProfile = async (userId: string) => {
-      if (fetchedUserId === userId) return; // Prevent duplicate calls
-      fetchedUserId = userId;
       await fetchProfile(userId);
     };
 
