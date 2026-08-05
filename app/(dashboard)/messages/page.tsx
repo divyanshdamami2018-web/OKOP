@@ -149,7 +149,7 @@ function MessagesContent() {
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/5 blur-[120px] rounded-full -mr-64 -mt-64 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-secondary/5 blur-[100px] rounded-full -ml-48 -mb-48 pointer-events-none" />
 
-          {activeConversationId && activeConv ? (
+          {activeConversationId && resolvedConvo ? (
             <>
               {/* Chat Header */}
               <header className="h-24 flex items-center justify-between px-8 border-b border-slate-200 dark:border-white/5 bg-white/40 dark:bg-slate-950/40 backdrop-blur-2xl sticky top-0 z-10">
