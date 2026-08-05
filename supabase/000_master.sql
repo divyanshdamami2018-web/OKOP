@@ -323,6 +323,35 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Create DM Function (Atomic)
+CREATE OR REPLACE FUNCTION create_dm_conversation(user1_id UUID, user2_id UUID)
+RETURNS UUID AS $$
+DECLARE
+    new_conv_id UUID;
+BEGIN
+    -- Check for existing DM first
+    SELECT conversation_id INTO new_conv_id
+    FROM conversation_participants cp1
+    JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
+    WHERE cp1.user_id = user1_id AND cp2.user_id = user2_id
+    AND EXISTS (SELECT 1 FROM conversations WHERE id = cp1.conversation_id AND is_group = FALSE)
+    LIMIT 1;
+
+    IF new_conv_id IS NOT NULL THEN
+        RETURN new_conv_id;
+    END IF;
+
+    -- Create new conversation
+    INSERT INTO conversations (is_group) VALUES (FALSE) RETURNING id INTO new_conv_id;
+
+    -- Add participants
+    INSERT INTO conversation_participants (conversation_id, user_id)
+    VALUES (new_conv_id, user1_id), (new_conv_id, user2_id);
+
+    RETURN new_conv_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- XP Rewards (Atomic)
 CREATE OR REPLACE FUNCTION award_xp(target_user_id UUID, amount INTEGER)
 RETURNS void AS $$
@@ -487,23 +516,24 @@ CREATE POLICY "Users can update their checkins" ON meet_spot_checkins FOR UPDATE
 
 -- MESSAGING
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see own conversations" ON conversations FOR SELECT USING (
-  EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = conversations.id AND user_id = auth.uid())
+CREATE POLICY "Conversations select policy" ON conversations FOR SELECT USING (
+  id IN (SELECT conversation_id FROM conversation_participants WHERE user_id = auth.uid())
 );
-CREATE POLICY "Users can create conversations" ON conversations FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Conversations insert policy" ON conversations FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see participants in their convos" ON conversation_participants FOR SELECT USING (
-  EXISTS (SELECT 1 FROM conversation_participants cp WHERE cp.conversation_id = conversation_participants.conversation_id AND cp.user_id = auth.uid())
+CREATE POLICY "Participants select policy" ON conversation_participants FOR SELECT USING (
+  conversation_id IN (SELECT cp.conversation_id FROM conversation_participants cp WHERE cp.user_id = auth.uid())
 );
-CREATE POLICY "Users can join convos" ON conversation_participants FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Participants insert policy" ON conversation_participants FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see messages in their convos" ON messages FOR SELECT USING (
-  EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = auth.uid())
+CREATE POLICY "Messages select policy" ON messages FOR SELECT USING (
+  conversation_id IN (SELECT cp.conversation_id FROM conversation_participants cp WHERE cp.user_id = auth.uid())
 );
-CREATE POLICY "Users can send messages to their convos" ON messages FOR INSERT WITH CHECK (
-  auth.uid() = sender_id AND EXISTS (SELECT 1 FROM conversation_participants WHERE conversation_id = messages.conversation_id AND user_id = auth.uid())
+CREATE POLICY "Messages insert policy" ON messages FOR INSERT WITH CHECK (
+  auth.uid() = sender_id AND
+  conversation_id IN (SELECT cp.conversation_id FROM conversation_participants cp WHERE cp.user_id = auth.uid())
 );
 
 -- SOCIAL (New)
@@ -535,8 +565,9 @@ CREATE POLICY "Users can unbookmark" ON post_bookmarks FOR DELETE USING (auth.ui
 
 -- NOTIFICATIONS & TOKENS
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see own notifications" ON notifications FOR SELECT USING (auth.uid() = receiver_id);
-CREATE POLICY "Users can mark own notifications read" ON notifications FOR UPDATE USING (auth.uid() = receiver_id);
+CREATE POLICY "Notifications select policy" ON notifications FOR SELECT USING (auth.uid() = receiver_id);
+CREATE POLICY "Notifications insert policy" ON notifications FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Notifications update policy" ON notifications FOR UPDATE USING (auth.uid() = receiver_id);
 
 ALTER TABLE user_device_tokens ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users see own tokens" ON user_device_tokens FOR SELECT USING (auth.uid() = user_id);

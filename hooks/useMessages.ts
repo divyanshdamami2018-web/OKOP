@@ -82,13 +82,18 @@ export function useChat(conversationId: string | null) {
         filter: `conversation_id=eq.${conversationId}`
       }, (payload: any) => {
         const msg = payload.new;
-        setMessages(prev => [...prev, {
-          id: msg.id,
-          senderId: msg.sender_id,
-          text: msg.content,
-          timestamp: msg.created_at,
-          isRead: false
-        }]);
+        setMessages(prev => {
+          // Prevent duplicates if optimistic update already finished
+          if (prev.some(m => m.id === msg.id)) return prev;
+
+          return [...prev, {
+            id: msg.id,
+            senderId: msg.sender_id,
+            text: msg.content,
+            timestamp: msg.created_at,
+            isRead: false
+          }];
+        });
       })
       .subscribe();
 
@@ -99,8 +104,37 @@ export function useChat(conversationId: string | null) {
 
   const sendMessage = async (text: string) => {
     if (!conversationId || !profile) return;
-    const msg = await chatService.sendMessage(conversationId, profile.id, text);
-    return msg;
+
+    // Create optimistic message
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg = {
+      id: tempId,
+      senderId: profile.id,
+      text,
+      timestamp: new Date().toISOString(),
+      isRead: false,
+      isOptimistic: true
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    try {
+      const msg = await chatService.sendMessage(conversationId, profile.id, text);
+      // Replace optimistic message with real one
+      setMessages(prev => prev.map(m => m.id === tempId ? {
+        id: msg.id,
+        senderId: msg.sender_id,
+        text: msg.content,
+        timestamp: msg.created_at,
+        isRead: false
+      } : m));
+      return msg;
+    } catch (err) {
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      console.error('Failed to send message:', err);
+      throw err;
+    }
   };
 
   return { messages, loading, sendMessage };

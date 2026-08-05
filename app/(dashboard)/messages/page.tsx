@@ -52,30 +52,17 @@ function MessagesContent() {
       // If we have a user ID, find or create conversation
       if (userIdParam && currentUser) {
         try {
-          const { data: existing } = await supabase
-            .rpc('get_conversation_between_users', {
-              user1: currentUser.id,
-              user2: userIdParam
+          // Use atomic function to get or create DM
+          const { data: convId, error: rpcErr } = await supabase
+            .rpc('create_dm_conversation', {
+              user1_id: currentUser.id,
+              user2_id: userIdParam
             });
 
-          if (existing && existing.length > 0) {
-            setActiveConversationId(existing[0].id);
-          } else {
-            // Create new conversation
-            const { data: conv, error: convErr } = await supabase
-              .from('conversations')
-              .insert({ is_group: false })
-              .select()
-              .single();
+          if (rpcErr) throw rpcErr;
 
-            if (convErr) throw convErr;
-
-            await supabase.from('conversation_participants').insert([
-              { conversation_id: conv.id, user_id: currentUser.id },
-              { conversation_id: conv.id, user_id: userIdParam }
-            ]);
-
-            setActiveConversationId(conv.id);
+          if (convId) {
+            setActiveConversationId(convId);
           }
         } catch (err) {
           console.error('Error resolving user chat:', err);
@@ -101,12 +88,16 @@ function MessagesContent() {
     e.preventDefault();
     if (!inputText.trim() || !activeConversationId || !currentUser) return;
 
+    const textToSend = inputText.trim();
+    setInputText(''); // Clear instantly
+
     try {
-      await sendMessage(inputText.trim());
-      setInputText('');
+      await sendMessage(textToSend);
       setTyping(false);
     } catch (err) {
       console.error('Failed to send message:', err);
+      setInputText(textToSend); // Restore on error
+      alert('Failed to send message. Please check your connection.');
     }
   };
 
