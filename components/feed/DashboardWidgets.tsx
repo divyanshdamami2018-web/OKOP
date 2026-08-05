@@ -34,7 +34,7 @@ export const PlacementWidget = () => {
         <button className="text-[10px] font-black text-brand-info uppercase tracking-widest">Portal <ChevronRight size={10} /></button>
       </div>
       <div className="space-y-3">
-        {listings.length > 0 ? listings.map((item) => (
+        {listings.length > 0 ? listings.map((item: any) => (
           <div key={item.id} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-white/5 flex items-center justify-between group cursor-pointer hover:border-brand-info/30 transition-all">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-brand-info/10 flex items-center justify-center font-black text-brand-info text-xs">
@@ -75,7 +75,7 @@ export const FriendSuggestions = () => {
         </h3>
       </div>
       <div className="space-y-4">
-        {suggestions.length > 0 ? suggestions.map((person) => (
+        {suggestions.length > 0 ? suggestions.map((person: UserProfile) => (
           <div key={person.id} className="flex items-center justify-between group">
             <div className="flex items-center gap-3">
               <img src={person.avatar} className="w-10 h-10 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-brand-primary transition-all" />
@@ -111,7 +111,7 @@ export const LostFoundWidget = () => {
         <button className="text-[10px] font-black text-brand-danger uppercase tracking-widest flex items-center gap-1">Report <Plus size={10} /></button>
       </div>
       <div className="space-y-3">
-        {items.length > 0 ? items.map((item) => (
+        {items.length > 0 ? items.map((item: any) => (
           <div key={item.id} className="p-4 bg-brand-danger/5 rounded-2xl border border-brand-danger/10">
             <div className="flex gap-3">
               <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center text-brand-danger border border-brand-danger/20">

@@ -37,7 +37,7 @@ export function usePosts() {
           .from('post_likes')
           .select('post_id')
           .eq('user_id', user.id);
-        likedPostIds = (likedData || []).map(l => l.post_id);
+        likedPostIds = (likedData || []).map((l: any) => l.post_id);
       }
 
       const mappedPosts: Post[] = (data || []).map((p: any) => ({
