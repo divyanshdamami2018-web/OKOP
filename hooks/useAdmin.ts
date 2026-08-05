@@ -45,7 +45,7 @@ export function useAdmin() {
     const { data: allUsers } = await supabase.from('profiles').select('id');
     if (!allUsers) return;
 
-    const notifications = allUsers.map(u => ({
+    const notifications = allUsers.map((u: any) => ({
       receiver_id: u.id,
       title,
       body,
@@ -64,7 +64,7 @@ export function useAdmin() {
       .eq('id', userId);
 
     if (error) throw error;
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u));
+    setUsers(prev => prev.map((u: UserProfile) => u.id === userId ? { ...u, role } : u));
   };
 
   return { users, loading, fetchAllUsers, sendGlobalNotification, updateUserRole };

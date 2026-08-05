@@ -55,7 +55,7 @@ export function useClubs() {
     }
 
     // Update local state
-    setClubs(prev => prev.map(c =>
+    setClubs(prev => prev.map((c: Club) =>
       c.id === clubId ? { ...c, membersCount: c.membersCount + 1 } : c
     ));
   };

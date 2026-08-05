@@ -70,7 +70,7 @@ export function useNotifications() {
     if (error) console.error('Error marking notification as read:', error);
     else {
       setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
+        prev.map((n: Notification) => n.id === id ? { ...n, is_read: true } : n)
       );
     }
   };
