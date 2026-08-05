@@ -22,6 +22,7 @@ import { useConversations, useChat } from '@/hooks/useMessages';
 import { useTypingIndicator } from '@/hooks/useTyping';
 import { usePresence } from '@/hooks/usePresence';
 import { useAuthStore } from '@/store/auth.store';
+import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 

@@ -4,6 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Logo } from '@/components/layout/Logo';
+import { Navbar } from '@/components/layout/Navbar';
+import { BottomNav } from '@/components/layout/BottomNav';
 import {
   ArrowRight,
   Users,
@@ -45,6 +47,8 @@ const StatPill = ({ label, value }: any) => (
 export default function LandingPage() {
   return (
     <div className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <Navbar />
+
       {/* Dynamic Background Mesh & Floating Elements */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute top-[-10%] -left-[10%] w-[60%] h-[60%] bg-brand-primary/10 blur-[140px] rounded-full animate-pulse-gentle" />
@@ -222,6 +226,8 @@ export default function LandingPage() {
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">© 2024 OKOP'S Pulse Engine</p>
         </div>
       </footer>
+
+      <BottomNav />
     </div>
   );
 }

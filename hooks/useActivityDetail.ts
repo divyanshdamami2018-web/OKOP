@@ -18,7 +18,7 @@ export function useActivityDetail(id: string) {
       setLoading(true);
 
       const { data: actData, error: actError } = await supabase
-        .from('activities')
+        .from('events')
         .select(`
           *,
           creator:profiles(*)
@@ -33,9 +33,9 @@ export function useActivityDetail(id: string) {
       }
 
       const { data: partData } = await supabase
-        .from('activity_participants')
+        .from('event_registrations')
         .select('profiles(*)')
-        .eq('activity_id', id);
+        .eq('event_id', id);
 
       const mappedActivity: Activity & { conversation_id?: string } = {
         id: actData.id,

@@ -72,7 +72,10 @@ CREATE TABLE IF NOT EXISTS communities (
     name TEXT NOT NULL,
     slug CITEXT UNIQUE NOT NULL,
     description TEXT,
-    cover_image TEXT,
+    image_url TEXT,
+    banner_url TEXT,
+    category TEXT,
+    member_count INTEGER DEFAULT 0,
     creator_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -338,6 +341,8 @@ BEGIN
             UPDATE profiles SET following_count = following_count + 1 WHERE id = NEW.follower_id;
         ELSIF (TG_TABLE_NAME = 'posts') THEN
             UPDATE profiles SET post_count = post_count + 1 WHERE id = NEW.author_id;
+        ELSIF (TG_TABLE_NAME = 'community_members') THEN
+            UPDATE communities SET member_count = member_count + 1 WHERE id = NEW.community_id;
         END IF;
     ELSIF (TG_OP = 'DELETE') THEN
         IF (TG_TABLE_NAME = 'follows') THEN
@@ -345,6 +350,8 @@ BEGIN
             UPDATE profiles SET following_count = following_count - 1 WHERE id = OLD.follower_id;
         ELSIF (TG_TABLE_NAME = 'posts') THEN
             UPDATE profiles SET post_count = post_count - 1 WHERE id = OLD.author_id;
+        ELSIF (TG_TABLE_NAME = 'community_members') THEN
+            UPDATE communities SET member_count = member_count - 1 WHERE id = OLD.community_id;
         END IF;
     END IF;
     RETURN NULL;
@@ -353,6 +360,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER on_follow_change AFTER INSERT OR DELETE ON follows FOR EACH ROW EXECUTE FUNCTION update_social_counts();
 CREATE TRIGGER on_post_change AFTER INSERT OR DELETE ON posts FOR EACH ROW EXECUTE FUNCTION update_social_counts();
+CREATE TRIGGER on_community_member_change AFTER INSERT OR DELETE ON community_members FOR EACH ROW EXECUTE FUNCTION update_social_counts();
 
 -- Event Feed View (For backward compatibility with UI)
 CREATE OR REPLACE VIEW activity_feed AS

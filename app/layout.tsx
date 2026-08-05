@@ -26,11 +26,9 @@ export default function RootLayout({
             <AuthProvider>
               <AuthGuard>
                 <div className="relative flex flex-col min-h-screen">
-                  <Navbar />
-                  <BottomNav />
                   <LazyShells />
 
-                  <main className="flex-1 pt-28 md:pt-36 pb-24 md:pb-10 relative z-10">
+                  <main className="flex-1 relative z-10">
                     {children}
                   </main>
 

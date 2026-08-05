@@ -17,9 +17,9 @@ export function useJoinActivity(activityId: string) {
       }
 
       const { data } = await supabase
-        .from('activity_participants')
+        .from('event_registrations')
         .select('*')
-        .eq('activity_id', activityId)
+        .eq('event_id', activityId)
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -34,8 +34,8 @@ export function useJoinActivity(activityId: string) {
     if (!user) throw new Error('Auth required');
 
     const { error } = await supabase
-      .from('activity_participants')
-      .insert({ activity_id: activityId, user_id: user.id });
+      .from('event_registrations')
+      .insert({ event_id: activityId, user_id: user.id });
 
     if (error) {
         if (error.code === '23505') {
@@ -51,9 +51,9 @@ export function useJoinActivity(activityId: string) {
     if (!user) throw new Error('Auth required');
 
     const { error } = await supabase
-      .from('activity_participants')
+      .from('event_registrations')
       .delete()
-      .eq('activity_id', activityId)
+      .eq('event_id', activityId)
       .eq('user_id', user.id);
 
     if (error) throw error;

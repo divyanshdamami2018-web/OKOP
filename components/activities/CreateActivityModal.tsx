@@ -77,7 +77,7 @@ export const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen
 
       // 2. Insert into Supabase
       const { error: insertError } = await supabase
-        .from('activities')
+        .from('events')
         .insert({
           creator_id: user.id,
           title: data.title,

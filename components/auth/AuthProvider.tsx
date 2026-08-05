@@ -59,8 +59,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let cancelled = false;
+    let fetchedUserId: string | null = null;
 
     const loadProfile = async (userId: string) => {
+      if (fetchedUserId === userId) return;
+      fetchedUserId = userId;
       await fetchProfile(userId);
     };
 

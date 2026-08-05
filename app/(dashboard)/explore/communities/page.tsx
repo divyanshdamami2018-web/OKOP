@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { CreateCommunityModal } from '@/components/activities/CreateCommunityModal';
+
 const CATEGORIES = ['All', 'Official Clubs', 'Academic', 'Tech', 'Cultural', 'Sports', 'Gaming'];
 
 const COMMUNITIES = [
@@ -64,6 +66,7 @@ const COMMUNITIES = [
 
 export default function CommunitiesPage() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="max-w-7xl mx-auto px-6 space-y-12 pb-32">
@@ -89,12 +92,17 @@ export default function CommunitiesPage() {
               className="glass-input w-full py-4 pl-12 pr-4 text-sm"
             />
           </div>
-          <button className="btn-primary py-4 px-8 whitespace-nowrap !bg-brand-secondary shadow-brand-secondary/20 group">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn-primary py-4 px-8 whitespace-nowrap !bg-brand-secondary shadow-brand-secondary/20 group"
+          >
             <Plus size={20} strokeWidth={3} className="group-hover:rotate-90 transition-transform" />
             Create Community
           </button>
         </div>
       </header>
+
+      <CreateCommunityModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       {/* Hero: Discover Clubs */}
       <motion.div
