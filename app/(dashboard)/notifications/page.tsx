@@ -23,6 +23,12 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
       return <div className="p-2 bg-purple-500/10 text-purple-500 rounded-xl"><MessageSquare size={20} /></div>;
     case 'spot_alert':
       return <div className="p-2 bg-amber-500/10 text-amber-500 rounded-xl"><Zap size={20} /></div>;
+    case 'follow':
+      return <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl"><UserPlus size={20} /></div>;
+    case 'like':
+      return <div className="p-2 bg-rose-500/10 text-rose-500 rounded-xl"><Check size={20} /></div>;
+    case 'comment':
+      return <div className="p-2 bg-sky-500/10 text-sky-500 rounded-xl"><MessageSquare size={20} /></div>;
     default:
       return <div className="p-2 bg-slate-500/10 text-slate-500 rounded-xl"><Bell size={20} /></div>;
   }
@@ -95,7 +101,7 @@ export default function NotificationsPage() {
                         </div>
                       </div>
                       <p className={`text-sm leading-relaxed ${notification.is_read ? 'text-slate-500' : 'text-slate-400'}`}>
-                        {notification.content}
+                        {notification.body}
                       </p>
 
                       {!notification.is_read && (
