@@ -24,7 +24,7 @@ export function usePresence() {
         const state = channel.presenceState();
         setOnlineUsers(new Set(Object.keys(state)));
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({ online_at: new Date().toISOString() });
         }

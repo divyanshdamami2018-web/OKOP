@@ -32,7 +32,7 @@ export function useTypingIndicator(conversationId: string | null) {
         }
         setTypingUsers(users);
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({ isTyping: false });
         }
