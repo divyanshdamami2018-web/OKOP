@@ -44,10 +44,21 @@ export const LoginForm = () => {
     setError(null);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: data.identifier, // Supabase handles phone-based auth slightly differently, focusing on email for now
-        password: data.password,
-      });
+      let authError;
+      if (loginMethod === 'email') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: data.identifier,
+          password: data.password,
+        });
+        authError = error;
+      } else {
+        // Supabase phone login usually requires phone number with country code
+        const { error } = await supabase.auth.signInWithPassword({
+          phone: data.identifier,
+          password: data.password,
+        });
+        authError = error;
+      }
 
       if (authError) throw authError;
 
