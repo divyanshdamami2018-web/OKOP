@@ -46,38 +46,26 @@ function MessagesContent() {
 
   useEffect(() => {
     async function resolveParams() {
-      if (resolving) return;
+      if (resolving || !currentUser) return;
 
       // Prioritize explicit ID
       if (conversationIdParam) {
-        setActiveConversationId(conversationIdParam);
+        if (activeConversationId !== conversationIdParam) {
+          setActiveConversationId(conversationIdParam);
+        }
         return;
       }
 
       // If we have a user ID, find or create conversation
-      if (userIdParam && currentUser) {
+      if (userIdParam) {
         setResolving(true);
         try {
-          // Use atomic function to get or create DM
-          let convId = null;
-          const { data: rpcData, error: rpcErr } = await supabase
-            .rpc('create_dm_conversation', {
-              user1_id: currentUser.id,
-              user2_id: userIdParam
-            });
-
-          if (rpcErr || !rpcData) {
-            console.warn('RPC create_dm_conversation failed, falling back to JS implementation', rpcErr);
-            convId = await chatService.createDM(currentUser.id, userIdParam);
-          } else {
-            convId = rpcData;
-          }
-
-          if (convId) {
+          const convId = await chatService.createDM(currentUser.id, userIdParam);
+          if (convId && activeConversationId !== convId) {
             setActiveConversationId(convId);
-            // Pre-fetch to avoid blank screen
+            // Pre-fetch detail
             const details = await chatService.getConversationById(convId, currentUser.id);
-            setResolvedConvo(details);
+            if (details) setResolvedConvo(details);
           }
         } catch (err) {
           console.error('Error resolving user chat:', err);
@@ -93,9 +81,7 @@ function MessagesContent() {
       }
     }
 
-    if (currentUser && !convsLoading) {
-      resolveParams();
-    }
+    resolveParams();
   }, [conversations, activeConversationId, conversationIdParam, userIdParam, currentUser, convsLoading]);
 
   // Sync resolvedConvo from conversations list if possible

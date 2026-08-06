@@ -7,12 +7,14 @@ export function useFollows(targetUserId: string) {
 
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!targetUserId) {
       setFollowerCount(0);
+      setFollowingCount(0);
       setIsFollowing(false);
       setLoading(false);
       return;
@@ -22,10 +24,16 @@ export function useFollows(targetUserId: string) {
 
     try {
       const requests = [
+        // Count Followers
         supabase
           .from("follows")
           .select("*", { count: "exact", head: true })
           .eq("following_id", targetUserId),
+        // Count Following
+        supabase
+          .from("follows")
+          .select("*", { count: "exact", head: true })
+          .eq("follower_id", targetUserId),
       ];
 
       if (currentUser) {
@@ -39,12 +47,13 @@ export function useFollows(targetUserId: string) {
         );
       }
 
-      const [countResult, followResult] = await Promise.all(requests);
+      const [followersResult, followingResult, followStatusResult] = await Promise.all(requests);
 
-      setFollowerCount(countResult.count ?? 0);
+      setFollowerCount(followersResult.count ?? 0);
+      setFollowingCount(followingResult.count ?? 0);
 
-      if (currentUser && followResult) {
-        setIsFollowing(!!followResult.data);
+      if (currentUser && followStatusResult) {
+        setIsFollowing(!!followStatusResult.data);
       } else {
         setIsFollowing(false);
       }

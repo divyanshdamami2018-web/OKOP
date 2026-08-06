@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { chatService } from '@/services/chat.service';
 import { useChatStore } from '@/store/chat.store';
 import { useAuthStore } from '@/store/auth.store';
 import { supabase } from '@/lib/supabase';
+import { Message } from '@/types';
 
 export function useConversations() {
   const { profile, loading: authLoading } = useAuthStore();
@@ -31,7 +32,6 @@ export function useConversations() {
 
     if (!profile) return;
 
-    // Real-time conversation list updates
     const channelName = `convo_list_${profile.id}_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
       .channel(channelName)
@@ -48,33 +48,36 @@ export function useConversations() {
     };
   }, [profile, fetch]);
 
-  return { conversations, loading };
+  return { conversations, loading, refresh: fetch };
 }
 
 export function useChat(conversationId: string | null) {
   const { profile } = useAuthStore();
-  const [messages, setMessages] = useState<any[]>([]);
+  const { messageCache, setMessages: setGlobalMessages, addMessage } = useChatStore();
   const [loading, setLoading] = useState(false);
 
-  const fetchMessages = useCallback(async () => {
-    if (!conversationId) return;
+  const messages = conversationId ? (messageCache[conversationId] || []) : [];
+
+  const fetchMessages = useCallback(async (id: string) => {
     setLoading(true);
     try {
-      const data = await chatService.getMessages(conversationId);
-      setMessages(data);
+      const data = await chatService.getMessages(id);
+      setGlobalMessages(id, data);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load messages:', err);
     } finally {
       setLoading(false);
     }
-  }, [conversationId]);
+  }, [setGlobalMessages]);
 
   useEffect(() => {
-    fetchMessages();
+    if (conversationId && !messageCache[conversationId]) {
+      fetchMessages(conversationId);
+    }
 
     if (!conversationId) return;
 
-    const channelName = `chat_${conversationId}_${Math.random().toString(36).substring(7)}`;
+    const channelName = `chat_room_${conversationId}_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', {
@@ -84,58 +87,60 @@ export function useChat(conversationId: string | null) {
         filter: `conversation_id=eq.${conversationId}`
       }, (payload: any) => {
         const msg = payload.new;
-        setMessages(prev => {
-          // Skip own messages — already handled by the optimistic update
-          if (msg.sender_id === profile?.id) return prev;
-          // Prevent duplicates from any other source
-          if (prev.some(m => m.id === msg.id)) return prev;
+        const mapped: Message = {
+          id: msg.id,
+          senderId: msg.sender_id,
+          text: msg.content,
+          timestamp: msg.created_at,
+          isRead: !!msg.read_at
+        };
 
-          return [...prev, {
-            id: msg.id,
-            senderId: msg.sender_id,
-            text: msg.content,
-            timestamp: msg.created_at,
-            isRead: false
-          }];
-        });
+        // Skip own messages handled optimistically
+        if (msg.sender_id !== profile?.id) {
+          addMessage(conversationId, mapped);
+        }
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, fetchMessages]);
+  }, [conversationId, fetchMessages, addMessage, profile?.id]);
 
   const sendMessage = async (text: string) => {
     if (!conversationId || !profile) return;
 
-    // Create optimistic message
     const tempId = `temp-${Date.now()}`;
-    const optimisticMsg = {
+    const optimisticMsg: Message = {
       id: tempId,
       senderId: profile.id,
       text,
       timestamp: new Date().toISOString(),
-      isRead: false,
-      isOptimistic: true
+      isRead: false
     };
 
-    setMessages(prev => [...prev, optimisticMsg]);
+    // Push to global store immediately
+    addMessage(conversationId, optimisticMsg);
 
     try {
       const msg = await chatService.sendMessage(conversationId, profile.id, text);
-      // Replace optimistic message with real one
-      setMessages(prev => prev.map(m => m.id === tempId ? {
+
+      // Update global store: replace optimistic with real
+      const currentMessages = useChatStore.getState().messageCache[conversationId] || [];
+      const updated = currentMessages.map(m => m.id === tempId ? {
         id: msg.id,
         senderId: msg.sender_id,
         text: msg.content,
         timestamp: msg.created_at,
         isRead: false
-      } : m));
+      } : m);
+
+      setGlobalMessages(conversationId, updated);
       return msg;
     } catch (err) {
-      // Remove optimistic message on failure
-      setMessages(prev => prev.filter(m => m.id !== tempId));
+      // Rollback failure
+      const currentMessages = useChatStore.getState().messageCache[conversationId] || [];
+      setGlobalMessages(conversationId, currentMessages.filter(m => m.id !== tempId));
       console.error('Failed to send message:', err);
       throw err;
     }

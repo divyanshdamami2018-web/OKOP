@@ -160,7 +160,11 @@ export const chatService = {
         avatar: p.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`,
         username: p.profiles?.username || 'user',
         status: p.profiles?.status || 'offline',
-        role: p.profiles?.role || 'student'
+        role: p.profiles?.role || 'student',
+        xp_points: p.profiles?.xp_points || 0,
+        daily_streak: p.profiles?.daily_streak || 0,
+        interests: p.profiles?.interests || [],
+        skills: p.profiles?.skills || []
       }));
 
     return {
@@ -169,21 +173,49 @@ export const chatService = {
       name: data.name,
       participants: otherParticipants,
       unreadCount: 0
-    } as any;
+    } as Conversation;
   },
 
   async createDM(user1Id: string, user2Id: string): Promise<string> {
-    // 1. Check existing
-    const { data: shared } = await supabase.rpc('get_conversation_between_users', {
+    // 1. Check existing via RPC for accuracy
+    const { data: convId, error: rpcErr } = await supabase.rpc('get_conversation_between_users', {
       user1: user1Id,
       user2: user2Id
     });
 
-    if (shared && shared.length > 0) {
-      return shared[0].id;
+    if (!rpcErr && convId && convId.length > 0) {
+      return (convId as any)[0].id;
     }
 
-    // 2. Create New
+    // 2. Fallback to manual check if RPC fails
+    const { data: participants } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', user1Id);
+
+    if (participants && participants.length > 0) {
+      const myConvIds = participants.map(p => p.conversation_id);
+      const { data: shared } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user2Id)
+        .in('conversation_id', myConvIds);
+
+      if (shared && shared.length > 0) {
+         // Verify it's a DM (not group)
+         const sharedIds = shared.map(s => s.conversation_id);
+         const { data: dms } = await supabase
+           .from('conversations')
+           .select('id')
+           .in('id', sharedIds)
+           .eq('is_group', false)
+           .limit(1);
+
+         if (dms && dms.length > 0) return dms[0].id;
+      }
+    }
+
+    // 3. Create New
     const { data: newConv, error: createErr } = await supabase
       .from('conversations')
       .insert({ is_group: false })
@@ -192,7 +224,7 @@ export const chatService = {
 
     if (createErr) throw createErr;
 
-    // 3. Add Participants
+    // 4. Add Participants
     const { error: partErr } = await supabase
       .from('conversation_participants')
       .insert([

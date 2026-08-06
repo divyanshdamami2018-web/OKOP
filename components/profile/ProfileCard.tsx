@@ -33,7 +33,7 @@ interface ProfileCardProps {
 }
 
 export const ProfileCard: React.FC<ProfileCardProps> = ({ user, isOwnProfile }) => {
-  const { followerCount, isFollowing, follow, unfollow, loading } = useFollows(user.id);
+  const { followerCount, followingCount, isFollowing, follow, unfollow, loading } = useFollows(user.id);
   const { user: currentUser } = useAuth();
 
   const handleFollowAction = async () => {
@@ -139,7 +139,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ user, isOwnProfile }) 
         {/* Dynamic Stats Grid */}
         <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatBox label="Followers" value={followerCount.toString()} color="brand-primary" />
-          <StatBox label="Following" value="0" color="brand-secondary" />
+          <StatBox label="Following" value={followingCount.toString()} color="brand-secondary" />
           <StatBox label="XP Points" value={user.xp_points.toLocaleString()} color="brand-accent" />
           <StatBox label="Daily Streak" value={user.daily_streak.toString()} color="brand-info" />
         </div>
